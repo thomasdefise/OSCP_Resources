@@ -17,11 +17,11 @@
 |1| wmic service get pathname,startname      | Displays all service and user name. |
 |2| wmic service get name,displayname,pathname,startmode \|findstr /i "auto" \|findstr /i /v "c:\windows\\\\" \|findstr /i /v """ | Search for "Unquoted Service Path" vulnerable services
 
-02) If there is are path that contains whitespace and run as *LocalSystem*, Unquoted Service Path vulnerability 
+02) If there is are path that contains whitespace and run as *LocalSystem*, <span style="color:red">Unquoted Service Path vulnerability</span> 
 When Windows starts a service, it looks for the PATH where that services is locating. If any unquoted (has space) in the PATH the service can be manipulating.
 Here below is an example of a Windows Service that is vulnerable:
 
-![](Unquoted_Example.PNG "NIHardwareService is vulnerable as it has no quote, has an auto start flag and run as LocalSystem account")
+![](Unquoted_Example.PNG)
 NIHardwareService is vulnerable as:
 - *C:\Program Files\Common Files\Native Instruments\Hardware\NIHardwareService.exe* contain a whitespace and is not quoted
 - The service as an *AUTO_START* start type
