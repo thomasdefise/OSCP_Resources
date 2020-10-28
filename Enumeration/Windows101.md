@@ -24,7 +24,7 @@ Here below is an example of a Windows Service that is vulnerable:
 ![](Unquoted_Example.PNG)
 NIHardwareService is vulnerable as:
 - *C:\Program Files\Common Files\Native Instruments\Hardware\NIHardwareService.exe* contain a whitespace and is not quoted
-- The service as an *AUTO_START* start type
+- The service has an *AUTO_START* start type
 - The service is runnig whith high privilege, *LocalSystem*
 
 
