@@ -27,6 +27,7 @@ NIHardwareService is vulnerable as:
 - The service as an *AUTO_START* start type
 - The service is runnig whith high privilege, *LocalSystem*
 
+
 #####*If you don't know, now you know : [Service Accounts](https://docs.microsoft.com/en-us/windows/win32/services/service-user-accounts)*
 
 - The **[NT AUTHORITY\LocalService](https://docs.microsoft.com/en-us/windows/win32/services/localservice-account)** account is a predefined local account used by the service control manager. It has minimum privileges on the local computer and presents anonymous credentials on the network. 
