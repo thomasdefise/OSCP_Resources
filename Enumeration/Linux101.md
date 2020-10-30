@@ -1,17 +1,21 @@
 ### Linux version
 
 ##### Distribution 
-cat /etc/issue
-cat /etc/*-release
-cat /etc/lsb-release
-cat /etc/redhat-release
+
+- cat [/etc/issue](https://man7.org/linux/man-pages/man5/issue.5.html): text file which contains a message or system identification to be printed before the login prompt.
+- cat /etc/*-release
+- cat [/etc/lsb-release](https://linux.die.net/man/1/lsb_release): contain the LSB_VERSION field. The value of the field should be a colon separated list of supported module versions indicating the LSB specification modules to which the installation is compliant. 
+- cat /etc/redhat-release
+- [lsb_release](https://linux.die.net/man/1/lsb_release) -all: Prints certain LSB (Linux Standard Base) and Distribution information
+
 ##### Kernel Version
-at /proc/version
-uname -a
-uname -mrs
-rpm -q kernel
-dmesg | grep Linux
-ls /boot | grep vmlinuz-
+
+- at [/proc/version](https://docs.fedoraproject.org/en-US/Fedora/14/html/Deployment_Guide/s2-proc-version.html): This file specifies the version of the Linux kernel, the version of gcc used to compile the kernel, and the time of kernel compilation.
+- [uname -a](https://linux.die.net/man/1/uname): Print all system information
+- [uname -mrs](https://linux.die.net/man/1/uname): Print the machine hardware name *m*, kernel release *r* and the kernel-name *s*
+- rpm -q kernel: Print the kernel version using the RPM Package Manager
+- [dmesg](https://man7.org/linux/man-pages/man1/dmesg.1.html) | grep Linux: Print or control the kernel ring buffer
+- ls /boot | grep vmlinuz-: Grep the name the Linux kernel executable within the boot partition
 
 ### Linux Process
 
@@ -42,12 +46,12 @@ Some capabilities to look for are:
 - **CAP_SETGID**: Make arbitrary manipulations of process GIDs and supplementary GID list
 - **CAP_SETUID**: Make arbitrary manipulations of process UIDs
 
-##### source:
+#### Sources:
 
 https://nxnjz.net/2018/08/an-interesting-privilege-escalation-vector-getcap/
 https://www.hackingarticles.in/linux-privilege-escalation-using-capabilities/
 
-##### Temp
+##### Temp:
 
 ip addr
 
