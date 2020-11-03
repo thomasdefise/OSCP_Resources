@@ -106,12 +106,6 @@ Some capabilities to look for are:
 https://nxnjz.net/2018/08/an-interesting-privilege-escalation-vector-getcap/
 https://www.hackingarticles.in/linux-privilege-escalation-using-capabilities/
 
-##### Temp:
-
-ip addr
-
--> docker0
-
 
 Sources:
 
