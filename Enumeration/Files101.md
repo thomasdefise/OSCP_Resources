@@ -14,6 +14,3 @@ If finding know files like JQuery, .... do comparaison to see if stuff changed
 |-|---------- | ----------- |
 |.bundle|Git|git clone *file.bundle*|
 |.db|SQlite|sqlite3 *user.db*|
-
-
-1) strings <>
