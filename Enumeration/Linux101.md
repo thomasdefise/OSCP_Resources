@@ -2,11 +2,15 @@
 
 ##### Distribution 
 
-- cat [/etc/issue](https://man7.org/linux/man-pages/man5/issue.5.html): text file which contains a message or system identification to be printed before the login prompt.
-- cat /etc/*-release
-- cat [/etc/lsb-release](https://linux.die.net/man/1/lsb_release): contain the LSB_VERSION field. The value of the field should be a colon separated list of supported module versions indicating the LSB specification modules to which the installation is compliant. 
-- cat /etc/redhat-release
-- [lsb_release](https://linux.die.net/man/1/lsb_release) -all: Prints certain LSB (Linux Standard Base) and Distribution information
+```bash
+cat /etc/issue # Text file which contains a message or system identification to be printed before the login prompt.
+cat /etc/*-release
+cat /etc/lsb-release # Contain the LSB_VERSION field. 
+# The value of the field should be a colon separated list of supported module
+# versions indicating the LSB specification modules to which the installation is compliant. 
+cat /etc/redhat-release
+lsb_release -all # Prints certain LSB (Linux Standard Base) and Distribution information
+```
 
 ##### Kernel Version
 
@@ -45,8 +49,15 @@ Cron examines all stored crontabs and checks each job to see if it needs to be r
 ##### Sudoers
 
 ```bash
+sudo -l # Check if they are scripts than once launch, they are run as root
 echo "vickie ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 ```
+
+###### *If you don't know, now you know: [Sudoers](https://help.ubuntu.com/community/Sudoers)*
+
+The /etc/sudoers file controls who can run what commands as what users on what machines and can also control special things such as whether you need a password for particular commands.
+
+You can use **PASSWD** and **NOPASSWD** to specify whether the user has to enter a password or not
 
 ##### $PATH
 ```bash
