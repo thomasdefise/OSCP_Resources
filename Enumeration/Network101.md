@@ -11,6 +11,12 @@ amass intel -cidr 104.154.0.0/15 # Collect OSINT for the given CIDRs
 ``` 
 - **intel**: Collect open source intelligence for investigation of the target organization
 
+In the example below, we don't use OSINT but we use Google's DNS with a list in a "Brute-forcing way"
+
+```bash
+gobuster dns -d <domain> -t 8 -r 8.8.8.8 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt 
+``` 
+
 ##### Reverse DNS
 
 ```bash
@@ -62,6 +68,14 @@ Just add garbage data to the packets so the IPS/IDS signature is avoided.
   *Features such as version detection and the Nmap Scripting Engine generally don't support fragmentation because they rely on your host's TCP stack to communicate with target services.*
 
 
+If you see those following message, it means that for some packets, Nmap it is getting neither a udp nor icmp (destination unreachable) response from the host..
+*Increasing send delay for 5.6.7.8 from 0 to 50 due to max_successful_tryno increase to 4*
+*Increasing send delay for 5.6.7.8 from 50 to 100 due to max_successful_tryno increase to 5*
+*Increasing send delay for 5.6.7.8 from 100 to 200 due to max_successful_tryno increase to 6*
+*Increasing send delay for 5.6.7.8 from 200 to 400 due to 11 out of 11 dropped probes since last increase.*
+
+By doing this, Nmap can differentiate between ports that are **blocked by firewalls** (no response regardless of sending interval) or **closed, but rate limited** (able to receive icmp destination unreachable response if the sending interval is sufficiently large).
+
 ### Found DNS Server
 -> You can change your host file /etc/resolv.conf
 
@@ -72,4 +86,5 @@ Just add garbage data to the packets so the IPS/IDS signature is avoided.
 |53|TCP/UDP|DNS|
 |88|UDP|Kerberos|
 |389|TCP|LDAP|
-|11211|TCP|Memcached|
+|8009||[AJP Connector](Applications/Tomcat.md)|
+|11211|TCP|[Memcached](Applications/memcached.md)|
