@@ -75,14 +75,10 @@ hashcat -m *Mode* *Hashes* *Worlist*
 #### Rule-based attack
 The rule-based attack is like a programming language designed for password candidate generation.
 
-
--r ??? /usr/share/hashcat/rules/best64.rules
-
-generating a wordlist
-
-hashcat --force ** -r /usr/share/hashcat/rules/best64.rules --stdout > custom_wl.txt
-also append_exclamation
-
+Here below is how to generate a new worldlist taking into account rule-based attack
+```bash
+hashcat -r /usr/share/hashcat/rules/best64.rules *wordlist* --stdout > custom_wl.txt
+```
 ### Bruteforcing
 
 ##### Zip Bruteforcing
