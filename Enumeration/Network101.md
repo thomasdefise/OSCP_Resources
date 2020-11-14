@@ -19,6 +19,8 @@ gobuster dns -d <domain> -t 8 -r 8.8.8.8 -w /usr/share/seclists/Discovery/DNS/su
 
 ##### Reverse DNS
 
+DNRecon support DNSSEC and mDNS
+
 ```bash
 dnsrecon -r *ip-address-range* -n *DNS*
 ```
@@ -43,6 +45,16 @@ dig @IP version.bind chaos txt
 #dig @192.168.1.1 version.bind txt chaos
 #;; ANSWER SECTION:
 #version.bind.       0   CH  TXT "dnsmasq-2.47"
+```
+
+##### (Side Note) Using Metaspoit
+
+```bash
+auxiliary/gather/dns_brutefore       # Perform a brute force dictionary DNS Scan
+auxiliary/gather/dns_cache_scraper   # Queries DNS cache for previously resolved named
+auxiliary/gather/dns_info            # Gathers general DNS information
+auxiliary/gather/dns_reverse_lookup  # Perform a reverse DNS (PTR) scan of a netblock
+auxiliary/gather/dns_srv_enum        # Enumerates SRV (Server) records
 ```
 
 #### OS Guessing (without Nmap)
