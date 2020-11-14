@@ -26,6 +26,25 @@ dnsrecon -r *ip-address-range* -n *DNS*
 - **-n**: Domain server to use.
 - **-r**: IP range for reverse lookup brute force in formats (first-last) or in (range/bitmask).
 
+##### Attempt a DNS Zone Transfer
+
+DNS zone transfer, also known as AXFR, is a type of DNS transaction. It is a mechanism designed to replicate the databases containing the DNS data across a set of DNS servers.
+
+```bash
+dig @IP hostname -t axfr
+```
+*Note that Nmap has a NSE script for testing that vulnerability*
+
+##### Bind Version (If DNS Server)
+
+```bash
+dig @IP version.bind chaos txt
+#                   Example                    #
+#dig @192.168.1.1 version.bind txt chaos
+#;; ANSWER SECTION:
+#version.bind.       0   CH  TXT "dnsmasq-2.47"
+```
+
 #### OS Guessing (without Nmap)
 
 ```bash
