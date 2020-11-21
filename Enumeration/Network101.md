@@ -35,7 +35,7 @@ DNS zone transfer, also known as AXFR, is a type of DNS transaction. It is a mec
 ```bash
 dig @IP hostname -t axfr
 ```
-*Note that Nmap has a NSE script for testing that vulnerability*
+*Note that Nmap has a NSE script for testing that vulnerability with --script=dns-zone-transfer*
 
 ##### Bind Version (If DNS Server)
 
@@ -66,6 +66,14 @@ ping *ip*
 - TTL is inferior than 64 -> high chance that it's a UNIX system 
 - TTL is around 128 -> high chance that it's a Windows system 
 
+#### WHOIS
+
+The WHOIS protocol provdes client/server access to information about internet domains and IPv4/IPv6 blocks
+
+```bash
+whois *domainname*
+```
+
 #### Port Scan
 
 ```bash
@@ -75,13 +83,14 @@ nmap -sC -sV -oA nmap/specificports -p *ports* -v *ip* # 3) Run a Script scan on
 nmap -sY *ip* -v # Perform a SCTP scan
 ```
 
-- **-p-**: Run on all ports
+- **-p-**: Run on all ports (except port 0 within some version)
 - **-oA**: Output
 - **-sC**: Script Scan
 - **-sV**: Probe open ports to determine service/version info
 - **-p**: Run only on those ports (eg: )
 - **-sY**: SCTP INIT/COOKIE-ECHO scans. SCTP sits alongside TCP and UDP. Intended to provide transport of telephony data over IP, the protocol duplicates many of the reliability features of Signaling System 7 (SS7), and underpins a larger protocol family known as SIGTRAN. SCTP is supported by operating systems including IBM AIX, Oracle Solaris, HP-UX, Linux, Cisco IOS, and VxWorks.
 
+If there are a lot of systems, you may need to use zenmap
 
 #### Nmap IDS & IPS Evasion
 - **TTL Manipulation**: --ttl *value*
@@ -117,5 +126,6 @@ By doing this, Nmap can differentiate between ports that are **blocked by firewa
 |53|TCP/UDP|DNS|
 |88|UDP|Kerberos|
 |389|TCP|LDAP|
+|8000||[Java Debug Wire Protocol](Applications/Tomcat.md)|
 |8009||[AJP Connector](Applications/Tomcat.md)|
 |11211|TCP|[Memcached](Applications/memcached.md)|
