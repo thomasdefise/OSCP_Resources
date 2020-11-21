@@ -1,4 +1,7 @@
-# Memcached
+## Memcached
+
+### Introduction
+
 
 Memcached is an in-memory key-value store for small chunks of arbitrary data (strings, objects) from results of database calls, API calls, or page rendering.
 
@@ -12,7 +15,7 @@ If you have access to a memcahed database you can do the following
 1. **stats slabs**: Print the slabs that have created and allocated for storing information within the cache. You get information both on each individual slab-class and total statistics for the whole slab.
 Individual stats for each slab class are prefixed with the slab ID.
 
-2. **stats cachedump *slabs_id* 0** Allows us to get the keys names associated to those slab
+2. **stats cachedump *slabs_id* 0**: Allows us to get the keys names associated to those slab
 3. **get *key***: Get the content of a key
 
 ###### *If you don't know, now you know: [Memcached](https://medium.com/@SkyscannerEng/journey-to-the-centre-of-memcached-b239076e678a)*
