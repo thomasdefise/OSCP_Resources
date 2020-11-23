@@ -116,14 +116,73 @@ If you see those following message, it means that for some packets, Nmap it is g
 
 By doing this, Nmap can differentiate between ports that are **blocked by firewalls** (no response regardless of sending interval) or **closed, but rate limited** (able to receive icmp destination unreachable response if the sending interval is sufficiently large).
 
-### Found DNS Server
+### DNS Server
 -> You can change your host file /etc/resolv.conf
+
+### FTP Server
+
+```bash
+# Test for anonymous connection
+ftp IP
+Name: anomymous
+Password:
+
+ls # Displays all files
+mget # Retreive all files
+```
+
+### SMTP
+
+> / / / To Do
+
+### TFTP
+
+TFTP requires no authentication, so ... 
+
+```bash
+nmap -n -Pn -sU -p 69 -sV --script tftp-enum IP # Brute-force default paths
+```
+
+Python can be used to interact with it
+
+```Python
+import tftpy
+client = tftpy.TftpClient(<ip>, <port>)
+client.download("filename in server", "/tmp/filename", timeout=5)
+client.upload("filename to upload", "/local/path/file", timeout=5)
+```
+
+### WHOIS
+
+```bash
+whois -h IP -p PORT DOMAIN # Get all the information that a whois service has about a domain
+```
+
+Note that WHOIS relies on databases to store. SQLi maybe possible with the following
+```bash
+whois -h IP -p PORT "a') or 1=1#"
+```
+
+### Finger Service
+
+Finger is an old user information protocol are simple network protocols for the exchange of human-oriented status and user information that was created in ... 1977.
+
+You can use the [finger-user-enum](https://github.com/pentestmonkey/finger-user-enum) Perl script to bruteforce username
+
+```bash
+finger @VICTIM-IP # List users
+finger USERNAME@VICTIM-IP # Get info of user
+finger-user-enum.pl -U users.txt -t IP # Brute force to guess users
+finger "|/bin/ls -a /@IP" # Perform an RCE
+```
 
 ### Network Ports
 
 |Port(s)|Protocol(s)|Services|
 |-|---------- | ----------- |
 |53|TCP/UDP|DNS|
+|79|TCP|Finger|
+|69|UDP|TFTP|
 |88|UDP|Kerberos|
 |389|TCP|LDAP|
 |8000||[Java Debug Wire Protocol](Applications/Tomcat.md)|
