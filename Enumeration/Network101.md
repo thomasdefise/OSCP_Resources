@@ -147,7 +147,7 @@ mget # Retreive all files
 There are multiple version of SNMP we may encounter:
 
 |Version|Usage|Authentication|Encryption usage for Authentication|
-|-|-|-|-|-|
+|-|-|-|-|
 |V1|Most Frequent|Bases on a **string** called **commmunity**|No (**plain-text**)|
 |V2,V2C|Frequent|Bases on a **string** called **commmunity**|No (**plain-text**)|
 |V3|Less Frequent|Bases **credentials**|Yes|
@@ -174,6 +174,7 @@ https://github.com/raesene/TestingScripts/blob/main/snmpv3enum.rb
 # Note that snmpv3enum requires snmp-mibs-downloader
 snmpv3enum.rb -i IP -u /usr/share/metasploit-framework/data/wordlists/snmp_default_pass.txt
 ```
+
 #### Analyse the output
 
 - **Devices**: grep ".1.3.6.1.2.1.1.1.0" *.snmp
@@ -181,6 +182,53 @@ snmpv3enum.rb -i IP -u /usr/share/metasploit-framework/data/wordlists/snmp_defau
 - **Emails Addresses**: grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b" *.snmp
 
 ### SMTP
+
+#### Basic Information
+
+```bash
+# Banner Grabbing
+nc -vn <IP> 25
+openssl s_client -crlf -connect smtp.mailgun.org:465
+openssl s_client -starttls smtp -crlf -connect smtp.mailgun.org:587
+
+# MX server(s)
+dig +short mx victim.com
+
+# Attempts to use EHLO and HELP to gather the Extended commands supported by an SMTP server.
+nmap -pT:25,465,587 --script smtp-commands victim.com
+
+# Try to extract information using NTLM
+nmap -p 25,465,587 --script smtp-ntlm-info victim.com
+```
+
+#### Enumerate users (VRFY, EXPN and RCPT)
+
+```bash
+smtp-user-enum -U USERS_DICT -t IP
+```
+
+#### Send a fake mail to try to get information
+
+```bash
+sendEmail -t ciso@victim.com -f thomas@google.com -s 192.168.8.131 -u "Wanna Join Google ?"
+```
+
+sendMail options:
+
+- **-f**: from (sender) email address
+- **-t**: to email address(es)
+- **-s**: smtp mail relay
+- **-u**: message subject
+
+Some usefull information about SMTP
+
+The SMTP **HELO** clause is the stage of the SMTP protocol where a SMTP server introduce them selves to each other.
+Clients learn a server's supported options by using the **EHLO** (Extended HELLO)
+Within HELO, **HELP** supply helpful information	
+
+**Delivery Status Notifications**: This has been setup in order to inform human beings of the status of message delivery processing, as well as the reasons for any delivery problems or outright failures, in a manner that is largely independent of human language and media
+
+Note that smtp-user-enum (Python) is currently not by default on Kali. For installing it use the following command: /root/.local/bin/pip3.8 install smtp-user-enum
 
 ### TFTP
 
@@ -216,11 +264,14 @@ finger "|/bin/ls -a /@IP" # Perform an RCE
 
 |Port(s)|Protocol(s)|Services|
 |-|---------- | ----------- |
+|25||SMTP
 |53|TCP/UDP|DNS|
 |79|TCP|Finger|
 |69|UDP|TFTP|
 |88|UDP|Kerberos|
 |389|TCP|LDAP|
+|465||SMTPS|
+|587||
 |8000||[Java Debug Wire Protocol](Applications/Tomcat.md)|
 |8009||[AJP Connector](Applications/Tomcat.md)|
 |11211|TCP|[Memcached](Applications/memcached.md)|
