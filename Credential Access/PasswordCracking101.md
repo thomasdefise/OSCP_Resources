@@ -46,6 +46,17 @@ echo -n *hash* | wc -c: Get the count of characters within the hash
 
 #### Customm Dictionary generation
 
+##### Tesseract
+
+[Tesseract](https://github.com/tesseract-ocr/tesseract) is an optical character recognition engine for various operating systems developped by Google. This can be used to extract keyword from harvested images.
+
+Note that in many cases, in order to get better OCR results, you'll need to [improve the quality](https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html) of the image you are giving Tesseract.
+
+```bash
+tesseract imagename outputbase [-l lang] [--oem ocrenginemode]
+for x in *.jpg; do tesseract $x stoud -psm 11 -l eng >>tesser.out; done
+```
+
 ##### CeWL
 
 [CeWL](https://github.com/digininja/CeWL) is a ruby app which spiders a given URL to a specified depth, optionally following external links, and returns a list of words which can then be used for password crackers such as John the Ripper.
@@ -57,11 +68,22 @@ cewl --with-numbers https://domain.com > cewl_website_mainpage.txt
 - **-m 8**: Some people specify this parameter in order to fetch words that are equal or bigger than 8.
 *Note that -m 8 could lead to miss some interesting word, as some users take products names or the names of the company as password and in to meet the password policy, they add characther at the end such as (eg: G00gl3\*\*)*
 Those combination can be created using rule-based attack in hashcat.
+
 ```bash
 sort -u cewl_website_mainpage.txt /usr/share/seclists/Dictionary/english_dictionnary.txt > unique_word.txt # Delete english word from the list
 ```
 
+### Cisco7t
 
+User passwords and most other passwords (Type 7) (not enable secrets) in Cisco IOS configuration files are encrypted using a scheme that is very weak by modern cryptographic standards.
+
+[ciscot7](https://github.com/theevilbit/ciscot7) is a small tool to decrypt Cisco IOS type 7 passwords, it can also encrypt clear text passwords if required.
+
+```bash
+ciscot7.py -d -p PASSWORD
+```
+
+For more information: [Cisco IOS Password Encryption Facts](https://www.cisco.com/c/en/us/support/docs/security-vpn/remote-authentication-dial-user-service-radius/107614-64.html)
 
 ### Hashcat
 
@@ -79,6 +101,12 @@ Here below is how to generate a new worldlist taking into account rule-based att
 ```bash
 hashcat -r /usr/share/hashcat/rules/best64.rules *wordlist* --stdout > custom_wl.txt
 ```
+
+##### For the anecdote
+
+In 2012, the best64 challenge [forum thread](https://hashcat.net/forum/thread-1002.html) goal was to find the set of 64 rules that would be the most efficient for cracking a given set of hashes (the phpbb.com leak) with a given dictionary (so called top10k). While not having the best methodology (training and validation sets are identical), the winner (Arex1337) produced a set of 64 rules that is quite good in practice.
+[Source](https://www.synacktiv.com/en/publications/rulesfinder-automatically-create-good-password-cracking-rulesets.html)
+
 ### Bruteforcing
 
 ##### Zip Bruteforcing
