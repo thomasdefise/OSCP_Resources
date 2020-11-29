@@ -64,7 +64,8 @@ auxiliary/gather/dns_srv_enum        # Enumerates SRV (Server) records
 #### OS Guessing (without Nmap)
 
 ```bash
-ping *ip*
+xprobe2 IP
+ping IP
 ```
 
 - TTL is inferior than 64 -> high chance that it's a UNIX system
@@ -130,6 +131,26 @@ By doing this, Nmap can differentiate between ports that are **blocked by firewa
 
 -> You can change your host file /etc/resolv.conf
 
+### SSH
+
+[ssh-audit](https://github.com/jtesta/ssh-audit) is a tool for ssh server & client configuration auditing.
+
+### NFS
+
+You can try to get more information about those shares using nmap
+
+```bash
+nmap -p PORT --script=nfs-ls IP # List NFS exports and check permissions
+nmap -p PORT --script=nfs-showmount  IP # Like showmount -e
+nmap -p PORT --script=nfs-statfs IP  # Disk statistics and info from NFS share
+```
+
+You can try to mount the NFS shares
+
+```bash
+showmount -e IP
+```
+
 ### FTP Server
 
 ```bash
@@ -140,6 +161,13 @@ Password:
 
 ls # Displays all files
 mget # Retreive all files
+```
+
+We can also use wget to retreive all files
+Here below is an example when we have a user
+
+```bash
+wget --user USER --password PASSWORD -r ftp://IP
 ```
 
 ### SNMP
@@ -209,8 +237,12 @@ smtp-user-enum -U USERS_DICT -t IP
 
 #### Send a fake mail to try to get information
 
+[swaks](https://linux.die.net/man/1/swaks) is a *native* tool on Linux which stands for Swiss Army Knife SMTP
+[sendEmail](https://github.com/mogaal/sendemail) is a lightweight, completly command line based, SMTP email agent.
+
 ```bash
-sendEmail -t ciso@victim.com -f thomas@google.com -s 192.168.8.131 -u "Wanna Join Google ?"
+swaks -to ciso@victim.com --from thomas@google.com --server SERVER_IP --header "Wanna Join Google ?"
+sendEmail -t ciso@victim.com -f thomas@google.com -s SERVER_IP -u "Wanna Join Google ?"
 ```
 
 sendMail options:
@@ -224,7 +256,7 @@ Some usefull information about SMTP
 
 The SMTP **HELO** clause is the stage of the SMTP protocol where a SMTP server introduce them selves to each other.
 Clients learn a server's supported options by using the **EHLO** (Extended HELLO)
-Within HELO, **HELP** supply helpful information	
+Within HELO, **HELP** supply helpful information.
 
 **Delivery Status Notifications**: This has been setup in order to inform human beings of the status of message delivery processing, as well as the reasons for any delivery problems or outright failures, in a manner that is largely independent of human language and media
 
@@ -247,6 +279,17 @@ client.download("filename in server", "/tmp/filename", timeout=5)
 client.upload("filename to upload", "/local/path/file", timeout=5)
 ```
 
+### NTP
+
+```bash
+ntpdc -n -c monlist IP    # Get information from the NTP server
+nmap -sU -p 123 --script=ntp-* IP
+```
+
+Some things to know about NTP:
+
+- **monlist** is a debugging command that allows to retrieve information from the monitoring facility about traffic associated with the NTP service.
+
 ### Finger Service
 
 Finger is an old user information protocol are simple network protocols for the exchange of human-oriented status and user information that was created in ... 1977.
@@ -264,14 +307,19 @@ finger "|/bin/ls -a /@IP" # Perform an RCE
 
 |Port(s)|Protocol(s)|Services|
 |-|---------- | ----------- |
-|25||SMTP
+|21|TCP|FTP|
+|25|TCP|SMTP|
 |53|TCP/UDP|DNS|
 |79|TCP|Finger|
 |69|UDP|TFTP|
 |88|UDP|Kerberos|
+|123|UDP|NTP|
+|161|UDP|SNMP (Manager)|
+|162|UDP|SNMP (Agent)|
 |389|TCP|LDAP|
-|465||SMTPS|
-|587||
-|8000||[Java Debug Wire Protocol](Applications/Tomcat.md)|
-|8009||[AJP Connector](Applications/Tomcat.md)|
+|465|TCP|SMTP over SSL|
+|587|TCP|SMTP over TLS|
+|2029|TCP & UDP|NFSv4|
+|8000|TCP|[Java Debug Wire Protocol](Applications/Tomcat.md)|
+|8009|TCP|[AJP Connector](Applications/Tomcat.md)|
 |11211|TCP|[Memcached](Applications/memcached.md)|
