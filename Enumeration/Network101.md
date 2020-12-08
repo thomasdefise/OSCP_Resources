@@ -1,8 +1,8 @@
 # Network Enumeration
 
-#### DNS
+### DNS
 
-##### Public IPS, CIDRs & ASNs
+#### Public IPS, CIDRs & ASNs
 
 [Amass](https://github.com/OWASP/Amass) is backed by OWASP, which should provide prestige and confidence in the results. It is actively maintained and will likely be supported for a long time, meaning any future bugs will be resolved. Additionally, the adoption rate of Amass is high which potentially means better data consistency and integration with other tools
 
@@ -20,7 +20,7 @@ In the example below, we don't use OSINT but we use Google's DNS with a list in 
 gobuster dns -d <domain> -t 8 -r 8.8.8.8 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
 ```
 
-##### Reverse DNS
+#### Reverse DNS
 
 DNRecon support DNSSEC and mDNS
 
@@ -31,7 +31,7 @@ dnsrecon -r *ip-address-range* -n *DNS*
 - **-n**: Domain server to use.
 - **-r**: IP range for reverse lookup brute force in formats (first-last) or in (range/bitmask).
 
-##### Attempt a DNS Zone Transfer
+#### Attempt a DNS Zone Transfer
 
 DNS zone transfer, also known as AXFR, is a type of DNS transaction. It is a mechanism designed to replicate the databases containing the DNS data across a set of DNS servers.
 
@@ -41,7 +41,7 @@ dig @IP hostname -t axfr
 
 *Note that Nmap has a NSE script for testing that vulnerability with --script=dns-zone-transfer*
 
-##### Bind Version (If DNS Server)
+#### Bind Version (If DNS Server)
 
 ```bash
 dig @IP version.bind chaos txt
@@ -51,7 +51,7 @@ dig @IP version.bind chaos txt
 #version.bind.       0   CH  TXT "dnsmasq-2.47"
 ```
 
-##### (Side Note) Using Metaspoit
+#### (Side Note) Using Metaspoit
 
 ```bash
 auxiliary/gather/dns_brutefore       # Perform a brute force dictionary DNS Scan
@@ -61,17 +61,17 @@ auxiliary/gather/dns_reverse_lookup  # Perform a reverse DNS (PTR) scan of a net
 auxiliary/gather/dns_srv_enum        # Enumerates SRV (Server) records
 ```
 
-#### OS Guessing (without Nmap)
+### ICMP - OS Guessing (without Nmap)
 
 ```bash
-xprobe2 IP
+xprobe2 IP # Not installed by default on Kali
 ping IP
 ```
 
 - TTL is inferior than 64 -> high chance that it's a UNIX system
 - TTL is around 128 -> high chance that it's a Windows system
 
-#### WHOIS
+### WHOIS
 
 The WHOIS protocol provdes client/server access to information about internet domains and IPv4/IPv6 blocks
 
@@ -85,12 +85,12 @@ Note that WHOIS relies on databases to store. SQLi maybe possible with the follo
 whois -h IP -p PORT "a') or 1=1#"
 ```
 
-#### Port Scan
+### Port Scan
 
 ```bash
-nmap -p- -oA nmap/allports -v *ip* # 1) Perform a scan on all ports with the verbose mode
+nmap -p- -oA nmap/allports -v IP # 1) Perform a scan on all ports with the verbose mode
 cat nmap/allports.nmap | grep open | awk -F/ '{print $1}' ORS="," # 2) Get all opened ports separated by commas
-nmap -sC -sV -oA nmap/specificports -p *ports* -v *ip* # 3) Run a Script scan on open ports
+nmap -sC -sV -oA nmap/specificports -p PORTS -v IP # 3) Run a Script scan on open ports
 nmap -sY *ip* -v # Perform a SCTP scan
 ```
 
@@ -194,9 +194,7 @@ snmpcheck -t IP -c COMMUNITY -v X # Enumerate the SNMP community
 snmpwalk -c COMMUNITY -v X # Enumerate the SNMP community
 ```
 
-If it's SNMP v3, use the following 
-
-https://github.com/raesene/TestingScripts/blob/main/snmpv3enum.rb
+If it's SNMP v3, use the following [snmpv3enum](https://github.com/raesene/TestingScripts/blob/main/snmpv3enum.rb)
 
 ```bash
 # Note that snmpv3enum requires snmp-mibs-downloader
@@ -208,6 +206,101 @@ snmpv3enum.rb -i IP -u /usr/share/metasploit-framework/data/wordlists/snmp_defau
 - **Devices**: grep ".1.3.6.1.2.1.1.1.0" *.snmp
 - **Usernames/passwords**: grep -i "login\|fail" *.snmp
 - **Emails Addresses**: grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b" *.snmp
+
+### RPC
+
+Remote Procedure Call (RPC) is a request-response protocol that one program can use to request a service from a program located in another computer in a same network without having to understand the network’s details. It supports communication between Windows applications.
+
+#### RPC (111)
+
+The port mapper (rpc.portmap or just portmap, or rpcbind) is an Open Network Computing Remote Procedure Call (ONC RPC) service that runs on network nodes that provide other ONC RPC services.
+
+```bash
+rpcinfo IP
+nmap -sSUC -p111 IP
+```
+
+If there is [ypbind](https://linux.die.net/man/8/ypbind) running, you can try to exploit it.
+
+When NIS is installed it's configured a "domain name", if you have it, you can use [ypwhich](https://linux.die.net/man/1/ypwhich) to ping the NIS server and [ypcat](https://linux.die.net/man/1/ypcat) to obtain sentivive information.
+
+```bash
+ypwhich -d example.org IP
+ypcat –d example.org –h IP MAP
+```
+
+Here below are commion mapping that can be usefull
+
+|Master file|Map(s)|Notes|
+|-|-|-|
+|/etc/hosts|hosts.byname, hosts.byaddr|Contains hostnames and IP details|
+|/etc/passwd|passwd.byname, passwd.byuid|NIS user password file|
+|/etc/group|group.byname, group.bygid|NIS group file|
+|/usr/lib/aliases|mail.aliases|Details mail aliases|
+
+###### *If you don't know, now you know: [NIShttps://en.wikipedia.org/wiki/Network_Information_Service)*
+
+**Network Information Service (NIS)** is a client–server directory service protocol for distributing system configuration data such as user and host names between computers on a computer network.
+
+There are a variety of security weaknesses in NIS that leave the environment susceptible to a multitude of attacks.
+The first weakness in NIS focuses on configuration issues. Many default installations of NIS allow any user with an
+NIS account access to any system in NIS,
+
+The second major weakness is that NIS typically operates in a broadcast mode. The clients locate an NIS server
+on their subnet by broadcasting to the broadcast address of said subnet. As a result, NIS can be subject to a
+confidentiality attack resulting in unintentional information disclosure via a network sniffer such as tcpdump and
+snoop.
+
+The third major weakness in NIS deals with password restrictions. Traditional thinking states that if disclosure of the
+password cannot be prevented, that the password must become more complex and thus more difficult to crack using
+conventional password cracking utilities.
+
+#### RPC (135)
+
+Microsoft Remote Procedure Call, also known as a function call or a subroutine call, is a protocol that uses the client-server model in order to allow one program to request service from a program on another computer without having to understand the details of that computer's network.
+
+You can query the RPC locator service and individual RPC endpoints to catalog interesting services running over TCP, UDP, HTTP, and SMB (via named pipes).
+
+![msrpc](msrpc.png)
+*Image From book "Network Security Assesment 3rd Edition"*
+
+[rpcclient](https://www.samba.org/samba/docs/current/man-html/rpcclient.1.html) is a tool for executing client side MS-RPC functions
+
+```bash
+rpcclient -U "" *IP* # Try using an anonymous connection (also called NULL Session)
+rpcclient -U *username* *IP* # (Require Password)
+```
+
+- enumdomusers: Enumerate domain users
+  - RID (the suffix of their SID) in hexadecimal form
+  - To get the users, use **cat users_from_enumdomusers.txt | awk -F\\[ '{print \$2\}' | awk -F\\] '{print \$1\}' > users.txt**
+  - srvinfo: Server query info.
+  - netshareenumall: Enumerate all shares
+  - lookupsids: Resolve a list of SIDs to usernames.
+      -> Lookup for SID that are S-1-5-21....-(500->501 & 1000+)
+
+More Info: <https://www.sans.org/blog/plundering-windows-account-info-via-authenticated-smb-sessions/>
+
+###### If you don't know, now you know: [SID](https://en.wikipedia.org/wiki/Security_Identifier)*
+
+In the context of the Microsoft Windows NT line of operating systems, a **Security Identifier** (commonly abbreviated SID) is a unique, immutable identifier of a user, user group, or other security principal. A security principal has a single SID for life (in a given domain), and all properties of the principal, including its name, are associated with the SID.
+
+Format:
+
+*S - Revision Level - Identity Authority Value - Unique Identifier - Relative ID*
+Note that any group or user that is not created by default will have a Relative ID of 1000 or greater
+
+- Identity Authority Value
+
+|Decimal|Name|DisplayNames|Notes|
+|-|---------- | ----------- |--|
+|0|Null Authority||e.g. "Nobody" (S-1-0-0)|
+|1|World Authority||e.g. "Everyone" (S-1-1-0)|
+|2|Local Authority|||
+|5|NT Authority|NT AUTHORITY\||
+|11|Microsoft Account Authority|MicrosoftAccount\||
+|12|Azure Active Directory|AzureAD\||
+|15|Capability SIDs|||
 
 ### SMTP
 
@@ -262,6 +355,32 @@ Within HELO, **HELP** supply helpful information.
 
 Note that smtp-user-enum (Python) is currently not by default on Kali. For installing it use the following command: /root/.local/bin/pip3.8 install smtp-user-enum
 
+### Post Office Protocol
+
+The POP clients generally connect, retrieve all messages, store them on the client system, and delete them from the server.
+
+There are 3 versions of POP, but POP3 is the most used one.
+
+You can use the command **CAPA** to obtain the capabilities of the POP3 server.
+
+```bash
+nmap --scripts=pop3-capabilities -sV -port PORT IP
+nmap --scripts=pop3-ntlm-info -sV -port PORT IP
+```
+
+POP commands:
+
+- USER uid           Log in as "uid"
+- PASS password      Substitue "password" for your actual password
+- STAT               List number of messages, total mailbox size
+- LIST               List messages and sizes
+- RETR n             Show message n
+- DELE n             Mark message n for deletion
+- RSET               Undo any changes
+- QUIT               Logout (expunges messages if no RSET)
+- TOP msg n          Show first n lines of message number msg
+- CAPA               Get capabilities
+
 ### TFTP
 
 TFTP requires no authentication, so ...
@@ -303,6 +422,16 @@ finger-user-enum.pl -U users.txt -t IP # Brute force to guess users
 finger "|/bin/ls -a /@IP" # Perform an RCE
 ```
 
+### Rsync
+
+rsync is a utility for efficiently transferring and synchronizing files between a computer and an external hard drive and across networked computers by comparing the modification times and sizes of files.
+
+```bash
+nc -vn IP 873 # Banner grabbing
+nmap -sV --script "rsync-list-modules" -p 873 IP # Enumerate availables rsync modules
+rsync rsync://IP # Try to connect
+```
+
 ### Network Ports
 
 |Port(s)|Protocol(s)|Services|
@@ -313,13 +442,23 @@ finger "|/bin/ls -a /@IP" # Perform an RCE
 |79|TCP|Finger|
 |69|UDP|TFTP|
 |88|UDP|Kerberos|
+|110|TCP|POP3|
+|111|TCP|NFS(RPC Bind)|
 |123|UDP|NTP|
+|135|RCP & UDP|RPC|
 |161|UDP|SNMP (Manager)|
 |162|UDP|SNMP (Agent)|
 |389|TCP|LDAP|
 |465|TCP|SMTP over SSL|
 |587|TCP|SMTP over TLS|
+|995|TCP|POP3 over SSL|
 |2029|TCP & UDP|NFSv4|
+|5985|TCP|WinRM 2.0 HTTP|
+|5986|TCP|WinRM 2.0 HTTPS|
 |8000|TCP|[Java Debug Wire Protocol](Applications/Tomcat.md)|
 |8009|TCP|[AJP Connector](Applications/Tomcat.md)|
 |11211|TCP|[Memcached](Applications/memcached.md)|
+
+### References
+
+- Thanks to hacktricks for the NIS part
