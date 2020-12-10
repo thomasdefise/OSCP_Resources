@@ -70,6 +70,7 @@ ping IP
 
 - TTL is inferior than 64 -> high chance that it's a UNIX system
 - TTL is around 128 -> high chance that it's a Windows system
+- TTL is around 255 -> high chance that it is a Network device or a Solaris system
 
 ### WHOIS
 
@@ -127,6 +128,27 @@ If you see those following message, it means that for some packets, Nmap it is g
 
 By doing this, Nmap can differentiate between ports that are **blocked by firewalls** (no response regardless of sending interval) or **closed, but rate limited** (able to receive icmp destination unreachable response if the sending interval is sufficiently large).
 
+### Automated Scan
+
+#### Raccoon
+
+[Raccoon](https://github.com/evyatarmeged/Raccoon) is tool used for reconnaissance and information gathering.
+It perform multiple checks:
+
+- DNS Enumeration: through [dnsdumper](https://github.com/nmmapper/dnsdumpster) which perform DNS reconnaissance to find host subdomains, DNS Records, Geo informations and emails addresses
+- WHOIS Enumeration
+- TLS Enumeration: through his own [engine](https://github.com/evyatarmeged/Raccoon/blob/master/raccoon_src/lib/tls.py)
+- Network Port Scan: through Nmap (with service and scripts scan)
+- WAF detection: through his own [engine](https://github.com/evyatarmeged/Raccoon/blob/master/raccoon_src/lib/waf.py)
+- ...
+
+```bash
+raccoon -vulners-nmap-scan --no-sub-enum --no-url-fuzzing TARGET
+```
+
+I specify both **--no-sub-enum** and **--no-url-fuzzing** to not bruteforce subdomains and not fuzz URLs as it takes more times then to the scripts to run and it let a lot of noize.
+I prefer to use raccoon for a quick additional scans.
+
 ### DNS Server
 
 -> You can change your host file /etc/resolv.conf
@@ -170,6 +192,15 @@ Here below is an example when we have a user
 wget --user USER --password PASSWORD -r ftp://IP
 ```
 
+Last resort, if there is nothing else to start from
+
+```bash
+# Bruteforce
+ncrack -U /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt -P /usr/share/seclists/Passwords/Common-Credentials/rockyou.txt ftp://IP
+medusa -h IP -U /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt -P /usr/share/seclists/Passwords/Common-Credentials/rockyou.txt -M ftp
+hydra -L /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt -P /usr/share/seclists/Passwords/Common-Credentials/rockyou.txt ftp://IP
+```
+
 ### SNMP
 
 There are multiple version of SNMP we may encounter:
@@ -187,7 +218,8 @@ There are multiple tools to enumerate SNMP:
 - [onesixtyone](https://github.com/trailofbits/onesixtyone) is a program that sends SNMP requests to multiple IP addresses, trying different community strings and waiting for a reply.
 
 ```bash
-onesixtyone -c /Discovery/SNMP/common-snmp-community-strings-onesixtyone.txt -i FILE_HOSTS # Bruteforce SNMP community strings
+onesixtyone -c usr/share/seclists/Discovery/SNMP/common-snmp-community-strings-onesixtyone.txt IP # Bruteforce SNMP community strings
+onesixtyone -c /usr/share/metasploit-framework/data/wordlists/snmp_default_pass.txt IP # Bruteforce SNMP community strings
 
 # Once we have the community
 snmpcheck -t IP -c COMMUNITY -v X # Enumerate the SNMP community
@@ -262,6 +294,7 @@ Microsoft Remote Procedure Call, also known as a function call or a subroutine c
 You can query the RPC locator service and individual RPC endpoints to catalog interesting services running over TCP, UDP, HTTP, and SMB (via named pipes).
 
 ![msrpc](msrpc.png)
+
 *Image From book "Network Security Assesment 3rd Edition"*
 
 [rpcclient](https://www.samba.org/samba/docs/current/man-html/rpcclient.1.html) is a tool for executing client side MS-RPC functions
@@ -381,6 +414,169 @@ POP commands:
 - TOP msg n          Show first n lines of message number msg
 - CAPA               Get capabilities
 
+### SMB
+
+For that one, a bit more theory is required.
+
+#### Concept: Netbios (Port 139)
+
+NetBIOS is an acronym for Network Basic Input/Output System. It provides services related to the session layer of the OSI model allowing applications on separate computers to communicate over a local area network.
+
+NetBIOS provides three distinct services:
+
+- Name service (NetBIOS-NS) for name registration and resolution.
+- Datagram distribution service (NetBIOS-DGM) for connectionless communication.
+- Session service (NetBIOS-SSN) for connection-oriented communication.
+
+On Windows, SMB can run directly over TCP/IP without the need for NetBIOS over TCP/IP.
+On other systems, yo could find services and applications running with NetBIOS over TCP/IP.
+
+#### Concept: Server Message Block
+
+Server Message Block (SMB), one version of which was also known as Common Internet File System (CIFS), is a communication protocol for providing shared access to files, printers, and serial ports between nodes on a network.
+
+#### Enumerating
+
+Tools:
+
+- [smbclient](https://linux.die.net/man/1/smbclient) ftp-like client to access SMB/CIFS resources on servers.
+- [enum4linux](https://github.com/CiscoCXSecurity/enum4linux) is a tool for enumerating information from Windows and Samba systems.
+- [nmblookup](https://www.samba.org/samba/docs/current/man-html/nmblookup.1.html) NetBIOS over TCP/IP client used to lookup NetBIOS names
+- [ridenum](https://github.com/trustedsec/ridenum)is a RID cycling attack that attempts to enumerate user accounts through
+null sessions and the SID to RID enum.
+- [nbtscan-unixwiz](https://github.com/aYosukeAkatsuka/nbtscan-unixwiz) is a command-line tool that scans for open NETBIOS nameservers on a local or remote TCP/IP network
+
+```bash
+# Footprinting
+smbclient -L //$ip                               # Perform SMB Finger Printing (SMB Version)
+nbtscan-unixwiz -f IP                            # 
+nmap -sU --script nbstat.nse -p U:137,T:139 IP   # Attempts to retrieve the target's NetBIOS names and MAC address.
+nmblookup -A IP                                  # Lookup by IP
+enum4linux -a IP                                 # Perform all simple enumeration
+
+# Enumerate users
+/opt/impacket/examples/lookupsid.py USER:PASSWORD@victim.com # Enumerate both local and domain users.
+
+/opt/impacket/examples/reg.py ignite/Administrator:Ignite@987@192.168.1.105 query -keyName HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows -s
+```
+
+smbclient and cme may behave differently as one is a "legit" tool and the other is a "pentesting" tool
+
+```bash
+cme smb *ip¨* --shares
+
+# If you have a user
+nmap -v -oA shares --script smb-enum-shares --script-args smbuser=USER,smbpass=PASSWORD -p445 IP
+cme smb IP  -u USERNAME -p PASSWORD --shares
+cme smb IP  -u USERNAME -p PASSWORD -M spider_plus # Requires CME 5.1
+```
+
+As show below, you may need to try differents times with different parameters to gets information
+
+![Example of share enumeration](shares.png)
+
+```bash
+sudo mount -t cifs //ip//*share*
+sudo mount -t cifs -r 'user=USERNAME,password=PASSWORD //IP//SHARE /mnt/data
+```
+
+For more information about that technique refer to [T1021.002 - Remote Services: SMB/Windows Admin Shares](https://attack.mitre.org/techniques/T1021/002/)
+
+###### *If you don't know, now you know: (Windows Shares)[]*
+
+- **DriveLetter\$**: This is a shared root partition or volume. Shared root partitions and volumes are displayed as the drive letter name appended with the dollar sign (\$). For example, when drive letters C and D are shared, they are displayed as C\$ and D\$.
+- **ADMIN$**: This is a resource that is used during remote administration of a computer.
+- **IPC\$**: This is a resource that shares the named pipes that you must have for communication between programs. This resource cannot be deleted.
+The IPC\$ share is also known as a null session connection. By using this session, Windows lets anonymous users perform certain activities, such as enumerating the names of domain accounts and network shares. The IPC$ share is created by the Windows Server service.
+- **NETLOGON**: This is a resource that is used on domain controllers.
+- **SYSVOL**: This is a resource that is used on domain controllers.
+- **PRINT$**: This is a resource that is used during the remote administration of printers.
+- **profiles\$**:
+- **FAX$**: This is a shared folder on a server that is used by fax clients during fax transmission.
+  
+Note NETLOGON and SYSVOL are not hidden shares. Instead, these are special administrative shares.
+
+##### Kerberos
+
+###### Bruteforcing
+
+```bash
+kerbrute usernum -d *domain* *users.txt* # Enumerate valid domain usernames via Kerberos
+# Make sure to test for unvalid username
+cme smb *ip* --pass-pol # Get the password policy
+```
+
+By default, failures are not logged, but that can be changed with -v.
+Kerbrute has a **--safe** option.
+
+The **Account lockout threshold** policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. 
+It is recommended to set it to 10 by Microsoft and CIS Benchmark
+By default it's *"0 invalid sign-in attempts"*
+
+The **Account lockout duration** policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
+
+It is advisable to set Account lockout duration to approximately 15 minutes.
+
+### LDAP
+
+The Lightweight Directory Access Protocol is an open, vendor-neutral, industry standard application protocol for accessing and maintaining distributed directory information services over an Internet Protocol (IP) network.
+
+[ldapsearch](https://linux.die.net/man/1/ldapsearch) is a shell-accessible interface to perform LDAP queries.
+
+```bash
+ldapsearch -x -H LDAP_URI -s base namingcontexts # Get the actual domain
+ldapsearch -x -H LDAP_URI -s sub -b 'DC=X,DC=local' #
+# You can extract all users with the following command (require a user with a password)
+ldapsearch -x -h <IP> -D '<DOMAIN>\<username>' -w '<password>' -b "CN=Users,DC=<1_SUBDOMAIN>,DC=<TDL>"
+```
+
+Options:
+
+- **-x**: Use simple authentication instead of SASL.
+- **-H**: Specify URI(s) referring to the ldap server(s).
+- **-s**: Specify the scope of the search to be one of **base**, **one**, **sub**, or **children** to specify a base object, one-level, subtree, or children search.
+
+[ldapdomaindump](https://github.com/dirkjanm/ldapdomaindump) is an Active Directory information dumper via LDAP
+
+```bash
+ldapdomaindump <IP> [-r <IP>] -u '<domain>\<username>' -p '<password>' [--authtype SIMPLE] --no-json --no-grep [-o /path/dir]
+```
+
+### LLMNR/NBT-NS Spoofing Attack
+
+By responding to LLMNR/NBT-NS network traffic, we can spoof an authoritative source for name resolution to force communication with an out controlled system. We can then collect or relay authentication materials.
+Both those protocols uses NTLM and NTMLv2 hashes.
+
+Here below is an example of the attack.
+
+![LLMNR/NBT-NS Attack](LLMNR-NBT-NS.jpg)
+
+Source: <https://itrtech.africa/blog/the-llmnr-nbt-ns-strike/>
+
+[Responder](https://github.com/lgandx/Responder) is an LLMNR, NBT-NS and MDNS poisoner. It will answer to specific NBT-NS (NetBIOS Name Service) queries based on their name suffix
+
+```bash
+python Responder.py -I ETHERNER_INTERFACE -rdfwv # Built-in an HTTP Auth server, MSSQL Auth server, LDAP Auth server and WPAD Proxy Server
+```
+
+Options:
+
+- **-r**: Listen to Microsoft SQL Authentication (NBT-NS queries for SQL Server lookup are using the Workstation Service name suffix)
+- **-d**: Enable answers for netbios domain suffix queries.
+- **-w**: Start the WPAD rogue proxy server.
+- **-v**: Increase verbosity.
+- **-f**: This option allows you to fingerprint a host that issued an NBT-NS or LLMNR query.
+
+For more information about that technique refer to [T1557.001 - Man-in-the-Middle: LLMNR/NBT-NS Poisoning and SMB Relay](https://attack.mitre.org/techniques/T1557/001/)
+
+###### *If you don't know, now you know: [LLMNR](https://en.wikipedia.org/wiki/Link-Local_Multicast_Name_Resolution) & [NBT-NS](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc958811(v=technet.10)?redirectedfrom=MSDN)*
+
+Link-Local Multicast Name Resolution (LLMNR) and NetBIOS Name Service (NBT-NS) are Microsoft Windows components that serve as alternate methods of host identification. LLMNR is based upon the Domain Name System (DNS) format and allows hosts on the same local link to perform name resolution for other hosts. NBT-NS identifies systems on a local network by their NetBIOS name.
+
+###### *If you don't know, now you know: [WPAD](https://en.wikipedia.org/wiki/Web_Proxy_Auto-Discovery_Protocol)*
+
+The Web Proxy Auto-Discovery (WPAD) Protocol is a method used by clients to locate the URL of a configuration file using DHCP and/or DNS discovery methods. Once detection and download of the configuration file is complete, it can be executed to determine the proxy for a specified URL.
+
 ### TFTP
 
 TFTP requires no authentication, so ...
@@ -432,6 +628,16 @@ nmap -sV --script "rsync-list-modules" -p 873 IP # Enumerate availables rsync mo
 rsync rsync://IP # Try to connect
 ```
 
+### RSH
+
+The remote shell (rsh) is a command line computer program that can execute shell commands as another user, and on another computer across a computer network.
+
+```bash
+rsh <target> <command>       #
+rusers -al IP                # Displays the users currently logged on on the machine
+rlogin -l USERNAME <target>  # Connect on a remote machine with a 
+```
+
 ### Network Ports
 
 |Port(s)|Protocol(s)|Services|
@@ -450,7 +656,9 @@ rsync rsync://IP # Try to connect
 |162|UDP|SNMP (Agent)|
 |389|TCP|LDAP|
 |465|TCP|SMTP over SSL|
+|514|TCP|RSH|
 |587|TCP|SMTP over TLS|
+|873|TCP|Rsync|
 |995|TCP|POP3 over SSL|
 |2029|TCP & UDP|NFSv4|
 |5985|TCP|WinRM 2.0 HTTP|
