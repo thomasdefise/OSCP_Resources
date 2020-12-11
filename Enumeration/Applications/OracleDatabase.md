@@ -7,7 +7,24 @@
 
 #### Tools
 
-[ODAT](https://github.com/quentinhardy/odat) is an open source penetration testing tool that tests the security of Oracle Databases remotely.
+- Nmap
+- [Oscanner](https://gitlab.com/kalilinux/packages/oscanner/) is an Oracle assessment framework developed in Java.
+- [ODAT](https://github.com/quentinhardy/odat) is an open source penetration testing tool that tests the security of Oracle Databases remotely.
+- tnscmd10g is a tool to enumerate the oracle tnslsnr process
+
+```bash
+# Fingerprint Oracle TNS
+nmap --script=oracle-tns-version IP
+tnscmd10g version -h IP
+
+# Brute force oracle user accounts
+nmap --script=oracle-sid-brute IP
+nmap --script=oracle-brute IP
+
+oscanner -s 192.168.1.15 -P 1040
+```
+
+##### ODAT
 
 The all module is the first module that should be used when you meet an Oracle Database.
 It is very useful when you want to known what you can do on a database server with a valid SID or no, with a valid Oracle account or no.
@@ -28,7 +45,6 @@ If you have an account
 
 **Note that it will perform bruteforce by default with is own list**
 
-
 - If ODAT founds at least one SID (e.g. ORCL), it will search valid Oracle accounts.
 
 - For each valid account (e.g. SYS) on each valid instance (SID), ODAT will give you what each Oracle user can do (e.g. reverse shell, read files, become DBA).
@@ -45,3 +61,11 @@ The instance name defaults to the Oracle system identifier (SID) of the database
 The most common SID is **ORCL**
 
 Account are link to SID.
+
+Oracle can come with the Transparent Network Substrate protocol.
+TNS is a proprietary Oracle computer-networking technology, supports homogeneous peer-to-peer connectivity on top of other networking technologies such as TCP/IP, SDP and named pipes.
+
+
+Reference:
+
+Thanks to @Arrway for the "TNS" part <https://highon.coffee/blog/penetration-testing-tools-cheat-sheet/#fingerprint-oracle-tns-version>
