@@ -437,6 +437,15 @@ Server Message Block (SMB), one version of which was also known as Common Intern
 
 #### Enumerating
 
+Before starting, It may be possible that the system you try to enumerate is running an older version of SMB.
+In that case, you may need to do the following
+
+add "client min protocol = NT1" within the *[global]* section in */etc/samba/smb.conf*
+
+Vulnerabilities:
+
+- [CVE-2017-7494](https://github.com/opsxcq/exploit-CVE-2017-7494): Samba in 4.5.9 version and before that is vulnerable to a remote code execution vulnerability named SambaCry.
+
 Tools:
 
 - [smbclient](https://linux.die.net/man/1/smbclient) ftp-like client to access SMB/CIFS resources on servers.
@@ -444,12 +453,12 @@ Tools:
 - [nmblookup](https://www.samba.org/samba/docs/current/man-html/nmblookup.1.html) NetBIOS over TCP/IP client used to lookup NetBIOS names
 - [ridenum](https://github.com/trustedsec/ridenum)is a RID cycling attack that attempts to enumerate user accounts through
 null sessions and the SID to RID enum.
-- [nbtscan-unixwiz](https://github.com/aYosukeAkatsuka/nbtscan-unixwiz) is a command-line tool that scans for open NETBIOS nameservers on a local or remote TCP/IP network
+
+It's usually with enum4linux that I have the most information.
 
 ```bash
 # Footprinting
 smbclient -L //$ip                               # Perform SMB Finger Printing (SMB Version)
-nbtscan-unixwiz -f IP                            # 
 nmap -sU --script nbstat.nse -p U:137,T:139 IP   # Attempts to retrieve the target's NetBIOS names and MAC address.
 nmblookup -A IP                                  # Lookup by IP
 enum4linux -a IP                                 # Perform all simple enumeration
@@ -660,6 +669,7 @@ rlogin -l USERNAME <target>  # Connect on a remote machine with a
 |587|TCP|SMTP over TLS|
 |873|TCP|Rsync|
 |995|TCP|POP3 over SSL|
+|1821|TCP|[Oracle](Applications/OracleDatabase.md)
 |2029|TCP & UDP|NFSv4|
 |5985|TCP|WinRM 2.0 HTTP|
 |5986|TCP|WinRM 2.0 HTTPS|
