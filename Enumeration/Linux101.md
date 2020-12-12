@@ -98,7 +98,7 @@ printenv
 showmount -a # List both the client hostname or IP address and mounted directory in host:dir format.
 showmount -e # Show the NFS server’s export list.
 df -h # Display file system disk space usage in a human readable format
-/bin/ # Lists information about all or the specified block devices.
+ls /bin/ # Lists information about all or the specified block devices.
 ls /dev 2>/dev/null | grep -i "sd"
 cat /etc/fstab 2>/dev/null | grep -v "^#" | grep -Pv "\W*\#" 2>/dev/null
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/fstab 2>/dev/null
@@ -144,7 +144,6 @@ find / -name ssh_host_key* -print 2> /dev/null
 find / -name id_rsa* -print 2>/dev/null
 find / -name authorized_keys -print 2> /dev/null
 cat /etc/security/opasswd
-strings /dev/mem -n10 | grep -i PASS # Search for password in memory
 find . -name "*.php" -print0 | xargs -0 grep -i -n "var $password" # Search for password in PHP file (cc Joomla)
 locate password | more
 ```
@@ -388,6 +387,13 @@ Then open screenshot.raw with Gimp and specify the Width and Height
 
 This group allows you to view logs in /var/log.
 
+```bash
+ls -alhR /var/log                       # Display all files within /var/log
+zgrep "authen" auth.log*                # Search out "authen" within auth.log compressed file
+zgrep "pass" auth.log*                  # Search out "pass" within auth.log compressed 
+grep -d recurse "pass" /var/log/*       # Search out "pass" within all files in /var/log
+```
+
 ##### Wheel Group
 
 Any user that belongs to the group wheel can execute anything as sudo
@@ -462,7 +468,7 @@ curl https://github.com/GTFOBins/GTFOBins.github.io/tree/master/_gtfobins 2>/dev
 
 ```bash
 find / -perm -u=s -type f -print 2>/dev/null # Search for program with the SUID
-find / -perm -g=s -type f -print 2>/dev/null | sed 's:.*/::'  # Search for program with the SGID
+find / -perm -g=s -type f -print 2>/dev/null # Search for program with the SGID
 ```
 
 For more information about that technique refer to [T1548.001 - Abuse Elevation Control Mechanism: Setuid and Setgid](https://attack.mitre.org/techniques/T1548/001/)
