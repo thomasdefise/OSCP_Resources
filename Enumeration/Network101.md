@@ -248,9 +248,17 @@ Remote Procedure Call (RPC) is a request-response protocol that one program can 
 The port mapper (rpc.portmap or just portmap, or rpcbind) is an Open Network Computing Remote Procedure Call (ONC RPC) service that runs on network nodes that provide other ONC RPC services.
 
 ```bash
-rpcinfo IP
-nmap -sSUC -p111 IP
+rpcinfo IP           
+nmap -sSUC -p111 IP  
 ```
+
+*Note that nmap may display rpcbind while rpcinfo may display portmapper for the same program*
+
+You may see:
+
+- **portmapper**: The RPC portmapper is a server that converts RPC program numbers into TCP/IP (or UDP/IP) protocol port numbers.
+- **ypbind**: This daemon binds, or connects, processes on a Network Information Services (NIS) client to services on an NIS server.
+- **rusersd**: Is a server which returns information about users currently logged in to the system.
 
 If there is [ypbind](https://linux.die.net/man/8/ypbind) running, you can try to exploit it.
 
@@ -460,13 +468,19 @@ It's usually with enum4linux that I have the most information.
 # Footprinting
 smbclient -L //$ip                               # Perform SMB Finger Printing (SMB Version)
 nmap -sU --script nbstat.nse -p U:137,T:139 IP   # Attempts to retrieve the target's NetBIOS names and MAC address.
-nmblookup -A IP                                  # Lookup by IP
+nmblookup -A IP                                  # Lookup by IP and do all simple enumeration
 enum4linux -a IP                                 # Perform all simple enumeration
 
 # Enumerate users
 /opt/impacket/examples/lookupsid.py USER:PASSWORD@victim.com # Enumerate both local and domain users.
 
 /opt/impacket/examples/reg.py ignite/Administrator:Ignite@987@192.168.1.105 query -keyName HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows -s
+```
+
+You can try connect to a share by doing the following:
+
+```bash
+smbclient //IP/SHARE
 ```
 
 smbclient and cme may behave differently as one is a "legit" tool and the other is a "pentesting" tool
