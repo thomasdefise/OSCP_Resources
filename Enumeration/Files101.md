@@ -112,7 +112,31 @@ The second time a function is called, the Global Offset Table contains the known
 
 Since we know that the Global Offset Table lives in a predefined place and is writable, all that is needed is a bug that lets an attacker write four bytes anywhere.
 
-To prevent the above exploitation technique, we can tell the linker to resolve all dynamically linked functions at the beginning of execution and make the Global Offset Table read-only. 
+To prevent the above exploitation technique, we can tell the linker to resolve all dynamically linked functions at the beginning of execution and make the Global Offset Table read-only.
+
+### Microsoft Outlook email folder
+
+Outlook saves backup information in a variety of different locations. Depending on what type of account you have, you can back up your emails, your personal address book, your navigation pane settings, your signatures, templates, and more.
+
+[readpst](https://linux.die.net/man/1/readpst) convert PST (MS Outlook Personal Folders) files to mbox and other formats
+
+```bash
+readpst file.ost
+```
+
+If there is a .mbox, it can be opened with evolution
+
+### LUKS encrypted file
+
+[LUKS](https://en.wikipedia.org/wiki/Linux_Unified_Key_Setup) implements a platform-independent standard on-disk format for use in various tools.
+LUKS operates on Linux and is based on an enhanced version of cryptsetup, using dm-crypt as the disk encryption backend
+
+[bruteforce-luks](https://github.com/glv2/bruteforce-luks) tries to find the password of a LUKS encrypted volume
+
+```bash
+bruteforce-luks -f ./PASSWORD ./FILE.img
+cryptsetup open --type luks FILE.img test
+```
 
 #### Interesting file types
 
