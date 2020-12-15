@@ -95,6 +95,13 @@ getmac # Display the MAC Addresses
 
 For more information about that technique refer to [T1016 - System Network Configuration Discovery](https://attack.mitre.org/techniques/T1016/)
 
+#### Defense Enumeration
+
+```bash
+Get-MpPreference # Gets preferences for the Windows Defender scans and updates.
+Get-AppLockerPolicyInfo # Gets the local, the effective, or a domain AppLocker policy.
+```
+
 #### Remote Desktop Session
 
 Remote Desktop Services (RDS), known as **Terminal Services** in Windows Server 2008 and earlier, is one of the components of Microsoft Windows that allow a user to take control of a remote computer or virtual machine over a network connection.
