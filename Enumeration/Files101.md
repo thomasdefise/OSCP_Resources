@@ -114,6 +114,15 @@ Since we know that the Global Offset Table lives in a predefined place and is wr
 
 To prevent the above exploitation technique, we can tell the linker to resolve all dynamically linked functions at the beginning of execution and make the Global Offset Table read-only.
 
+### 7zip
+
+[7z-BruteForce](https://github.com/Seyptoo/7z-BruteForce) is a python script to bruteforce 7z files
+
+```bash
+python server.py --files backup.7z --wordlist lists.txt
+```
+
+
 ### Microsoft Outlook email folder
 
 Outlook saves backup information in a variety of different locations. Depending on what type of account you have, you can back up your emails, your personal address book, your navigation pane settings, your signatures, templates, and more.
