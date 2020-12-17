@@ -452,7 +452,7 @@ For more information about that technique refer to [T1555.003 - Credentials from
 
 #### Group Policy Preference Exploitation
 
-Please note that this has been partially fixed within MS14-025
+*Please note that this has been partially fixed within MS14-025*
 
 <https://adsecurity.org/?p=2288>
 
@@ -460,7 +460,7 @@ Please note that this has been partially fixed within MS14-025
 SYSVOL contains logon scripts, group policy data, and other domain-wide data which needs to be available anywhere there is a Domain Controller (since SYSVOL is automatically synchronized and shared among all Domain Controllers).
 
 Groups.xml file which is stored in SYSVOL
-The password in the xml file is "obscured" from the casual user by encrypting it with AES, I say obscured because the static key is published on the msdn website allowing for easy decryption of the stored value.
+The password in the xml file is *obscured* from the casual user by encrypting it with AES, I say obscured because the static key is published on the msdn website allowing for easy decryption of the stored value.
 
 ```bash
 Get-ChildItem -Path $AllUsers -Recurse -Include 'Groups.xml','Services.xml','Scheduledtasks.xml','DataSources.xml','Printers.xml','Drives.xml' -Force -ErrorAction SilentlyContinue
@@ -982,15 +982,42 @@ reg query "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\A
 
 #### COR_PROFILER
 
-> / / / To Finish
-
 **COR_PROFILER** is a .NET Framework feature which allows developers to specify an unmanaged (or external of .NET) profiling DLL to be loaded into each .NET process that loads the Common Language Runtime (CLR).
 
 ```bash
+# Enable the profiler
 reg add "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v COR_ENABLE_PROFILING /t REG_DWORD /d 1 /f
+# Add the CLSID/ProgID of the profiler
 reg add "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v COR_PROFILER /t REG_SZ /d 0 /f
+# Path to the profiler DLL
 reg add "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v COR_PROFILER_PATH /t REG_SZ /d 0 /f
 ```
+
+Note that this method can be used to can also be used to elevate privileges (ex: Bypass User Account Control) if the system .NET process executes at a higher permission level
+
+For more information about that technique refer to [T1574.012 - Hijack Execution Flow: COR_PROFILER](https://attack.mitre.org/techniques/T1574/012/)
+
+###### *If you don't know, now you know: [Common Language Runtime](https://docs.microsoft.com/en-us/dotnet/standard/clr)*
+
+First, we need to understand the difference between unmanaged code and managed code:
+
+- **Unmanaged code**: A code which is directly executed by the operating system
+- **Manage code**: A code which is written to aimed to get the services of the managed runtime environment execution like CLR (Common Language Runtime) in .NET Framework. It always implemented by the managed runtime environment instead of directly executed by the operating system.
+
+Manage code has the following advantages:
+
+- Improves the security of the application like when you use runtime environment, it automatically checks the memory buffers to guard against buffer overflow.
+- Implement the garbage collection automatically.
+- Provides runtime type checking/dynamic type checking.
+- Provides reference checking which means it checks whether the reference point to the valid object or not and also check they are not duplicate.
+
+But you cannor get the low-level access of the CPU architecture
+
+Common Language Runtime offers the opportunity **Profiling** which is a tool that monitors the execution of another application.
+A common language runtime (CLR) profiler is a dynamic link library (DLL) that consists of functions that receive messages from, and send messages to, the CLR by using the profiling API.
+
+From a security perspective from Microsoft
+> A profiler DLL is an unmanaged DLL that runs as part of the common language runtime execution engine. As a result, the code in the profiler DLL is not subject to the restrictions of managed code access security. The only limitations on the profiler DLL are those imposed by the operating system on the user who is running the profiled application.
 
 ### Application Shimming
 
