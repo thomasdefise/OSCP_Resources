@@ -13,6 +13,12 @@ From application version, you can guess which version of Windows the system is r
 #### Automated Enumeration tool
 
 [SharpUp](https://github.com/GhostPack/SharpUp) is a C# port of various PowerUp functionality.
+[Seabelt](https://github.com/GhostPack/Seatbelt) is a C# project that performs a number of security oriented host-survey "safety checks" relevant from both offensive and defensive security perspectives.
+
+```bash
+Seatbelt.exe AutoRuns CloudCredentials CredEnum EnvironmentPath NetworkProfiles NetworkShares ProcessCreationEvents PuttyHostKeys PuttySessions RDPSavedConnections RDPSessions SuperPutty TokenPrivileges WindowsVault
+```
+
 
 #### System information
 
@@ -234,6 +240,12 @@ For more information about that technique refer to [T1021.001 - Remote Services:
 
 #### Credentials
 
+##### Interesting File Type
+
+```bash
+Get-ChildItem -Path C:\ -Filter *.bat -Recurse -ErrorAction SilentlyContinue -Force # Search for bat file
+```
+
 ##### Interesting Files Enumeration
 
 ```bash
@@ -243,7 +255,8 @@ c:\sysprep\sysprep.xml # Could be Base64 encoded credentials.
 %WINDIR%\Panther\Unattended.xml # Could be Base64 encoded credentials.
 dir profile.ps1 /s # May be executed by an adminitrator or can be used to persist
 dir /s pass == cred == vnc == .config
-findstr /si password *.xml *.ini *.txt  # Search for password in xml, ini and xml files
+findstr /si password *.xml *.ini *.txt *.bat  # Search for password in xml, ini, xml and bat files files (Bash)
+cmd.exe /c findstr /si password *.xml *.ini *.txt *.bat # Search for password in xml, ini, xml and bat files (Powershell)
 reg query HKLM /f password /t REG_SZ /s # Search for password in registry keys in HKLM
 reg query HKCU /f password /t REG_SZ /s # Search for password in registry keys in HKCU
 dir "C:\Users\USER\AppData\Local\Microsoft\Windows\INetCookies"
@@ -305,6 +318,24 @@ dir C:\Users\username\AppData\Roaming\Microsoft\Credentials\
 ```
 
 We can also use mimikatz *dpapi::cred* with the appropriate */masterkey*
+
+###### PSCredential
+
+The PSCredential is a placeholder for a set of credentials which basically contains a username and a password.
+It is used as argument to a cmdlet
+
+It uses the DPAPI which can encrypt and decrypt information (such as a password) by using key material from both the **user** and **system** account.
+This means, effectively, the encrypted information is only accessible if the same user logs in to the same machine:
+
+- If another user logs in to the same machine the encrypted password file can’t be decrypted
+- If the same user copies the encrypted password file to another machine it can’t be decrypted
+
+Here below is how to decrypt them
+
+```powershell
+$credential = Import-CliXmL -Path file.txt
+$credential.GetNetworkCredential().Password
+```
 
 ##### Remote Desktop Credential Manager
 
