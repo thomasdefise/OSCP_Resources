@@ -1,5 +1,10 @@
 ### System Information
 
+#### Automated Enumeration tool
+
+[LinEnum](https://github.com/rebootuser/LinEnum)
+[linPEAS](https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite)
+
 #### Distribution
 
 ```bash
@@ -68,6 +73,8 @@ Netstat options:
 - **-au**: List all UDP ports
 - **-l**: List listening ports
 - **-p**: List with PID
+
+When looking at netstat, we could see programs that are only accessible from the box, but could be abused from the system.
 
 Note that within *squid.conf*, we could find:
 
@@ -215,7 +222,7 @@ cat /etc/httpd/conf/httpd.conf
 cat /opt/lampp/etc/httpd.conf
 ls -aRl /etc/ | awk '$1 ~ /^.*r.*/' # Displays all configuration files.
 find /etc \( -name rsyncd.conf -o -name rsyncd.secrets \) # Rsync files
-find /etc -name squid.conf 
+find /etc -name squid.conf -print 2>/dev/null
 ```
 
 - **/etc/exports**: Contains configurations and permissions of which folders/file systems are exported to remote users.
@@ -252,6 +259,7 @@ Under root squash, a client's uid 0 (root) is mapped to 65534 (nobody).
 ##### All Files/Folder
 
 ```bash
+find / -name *.db -print 2>/dev/null  # SQlite files
 find . -type d -perm -g=x 2>/dev/null
 find . -perm -u=x 2>/dev/null
 find / -writable ! -user `whoami` -type f ! -path "/proc/*" ! -path "/sys/*" -exec ls -al {} \; 2>/dev/null # Writable files
@@ -299,6 +307,23 @@ chsh
 cp /bin/sh /current/directory; sh
 ```
 
+#### Spawn a bash shell
+
+```bash
+# Python
+python -c 'import pty; pty.spawn("/bin/bash")'
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+# Perl
+perl —e 'exec "/bin/sh";'
+perl: exec "/bin/sh";
+# Ruby
+ruby: exec "/bin/sh"
+# Lua
+lua: os.execute('/bin/sh')
+# "Echo method"
+echo 'os.system('/bin/bash')'
+```
+
 #### Screen sessions
 
 Screen is a terminal multiplexer, which means that it allows you to start a screen session and then open any number of windows (virtual terminals) inside that session.
@@ -323,6 +348,16 @@ Here below are the command to attach to a specified session
 ```bash
 tmux attach -d -t NAME
 tmux -S /tmp/dev_sess attach -t 0
+```
+
+### Defense Enumeration
+
+**Security-Enhanced Linux (SELinux)** is a Linux kernel security module that provides a mechanism for supporting access control security policies, including mandatory access controls (MAC).
+
+```bash
+# SELinux
+getenforce # Get the current mode of SELinux
+sestatus # SELinux status tool
 ```
 
 ### Users
@@ -391,6 +426,8 @@ This group allows you to view logs in /var/log.
 ls -alhR /var/log                       # Display all files within /var/log
 zgrep "authen" auth.log*                # Search out "authen" within auth.log compressed file
 zgrep "pass" auth.log*                  # Search out "pass" within auth.log compressed 
+zgrep "authen" access.log*              # Search out "authen" within access.log compressed file
+zgrep "pass" access.log*                # Search out "pass" within access.log compressed file
 grep -d recurse "pass" /var/log/*       # Search out "pass" within all files in /var/log
 ```
 
@@ -675,11 +712,34 @@ Timers are systemd unit files with a suffix of .timer. Timers are like other uni
 systemctl list-timers --all
 ```
 
+Privileged timers are written to **/etc/systemd/system/** and **/usr/lib/systemd/system** while user level are written to **~/.config/systemd/user/**
+
+```bash
+# /etc/systemd/system/
+ls -la /etc/systemd/system/
+find /etc/systemd/system/ -perm -u=s -type f -print 2>/dev/null # Search for files with the SUID
+find /etc/systemd/system/ -perm -g=s -type f -print 2>/dev/null # Search for files with the SGID
+
+# /usr/lib/systemd/system
+ls -la /usr/lib/systemd/system
+find /usr/lib/systemd/system -perm -u=s -type f -print 2>/dev/null # Search for files with the SUID
+find /usr/lib/systemd/system -perm -g=s -type f -print 2>/dev/null # Search for files with the SGID
+
+# ~/.config/systemd/user/
+ls -la ~/.config/systemd/user/
+```
+
 You can abuse from timers the same way as for cron jobs.
 
 For more information about that technique refer to [T1053.006 - Scheduled Task/Job: Systemd Timers](https://attack.mitre.org/techniques/T1053/006/)
 
 ### Linux Processes
+
+The idea is to find a process run as root. Some interesting finding can be:
+
+- Process running as root that execute a script that we can change
+- Process running as root that that we could read to find interesting information
+- ...
 
 [pspy](https://github.com/DominicBreuker/pspy#how-it-works) is a command line tool designed to snoop on processes without need for root permissions. It allows you to see commands run by other users, cron jobs, etc. as they execute.
 It heavily uses the [inotify API](https://man7.org/linux/man-pages/man7/inotify.7.html) provides a mechanism for monitoring filesystem events.
@@ -688,6 +748,7 @@ Inotify can be used to monitor individual files, or to monitor directories.
 ```bash
 ./pspy64 -pf -i 1000 # Displays both commands and file system events and scan procfs every 1000 ms (=1sec)
 ps -aef --forest
+ps -aef --forest | grep "root"
 top
 cat /etc/services
 ps aux | grep root # Displays services run by root
@@ -716,12 +777,24 @@ Note that gdb will show also indicate you the following three sections:
 
 ### Binaries installed
 
+The ideas is to find binairies that we could leverage or binairies that are from third parties that may not be up-to-date with some vulnerabilities
+
+- **/usr/bin/**: Used for programs that both the system administrator and by users can run
+- **/usr/local/**: Used by the system administrator when installing software locally.
+- **/usr/local/bin/**: Used for programs that a normal user may run.
+- **/sbin/**: Used for programs needed for booting, low-level system repair, or maintenance (run level 1 or S)
+
+**local** usually means that they are not part of the distribution but either locally compiled or manually installed
+
 ```bash
 ls -alh /usr/bin/ # Displays all binaries within /usr/bin/
 ls -alh /sbin/ # Displays all binaries within /sbin/
+ls -alh /usr/local/ # Displays all the content of /usr/local/
+ls -alh /usr/local/bin/  # Displays all the content of /usr/local/
 dpkg -l # Displays all Debian based packages
 rpm -qa # Displays all RedHat based packages
 ```
+
 
 ### Linux Capabilities
 
