@@ -607,6 +607,7 @@ Check for the following access tokens
 |SeBackup|Threat|CLI|Read sensitve files|
 |SeCreateToken|Admin|3rd party tool|
 |SeDebug|Admin|PowerShell|<https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/Conjure-LSASS.ps1>|
+|SeImpersonatePrivilege|Admin|[https://github.com/itm4n/PrintSpoofer](https://github.com/itm4n/PrintSpoofer)|
 |SeLoadDriver|Admin|[EoPLoadDriver](https://github.com/TarlogicSecurity/EoPLoadDriver/|
 |SeRestore|Admin||
 |SeTakeOwnership|Admin||
@@ -620,6 +621,12 @@ Check for the following access tokens
 
   &#8594; mimikatz
 - SeImpersonatePrivilege
+  &#8594; PrintSpoofer
+
+  ```bash
+  PrintSpoofer.exe -i -c powershell
+  ```
+
 - SeLoadDriverPrivilege: Load malicious driver [Capcom.sys](https://github.com/FuzzySecurity/Capcom-Rootkit) using [EoPLoadDriver](https://github.com/TarlogicSecurity/EoPLoadDriver/)
 
   ```bash
