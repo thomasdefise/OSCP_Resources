@@ -229,6 +229,34 @@ There is a new version which is hping3
 
 <http://blog.tofte-it.dk/ethical-hacking-nmap-scruby-hping3/>
 
+#### Through other paths
+
+By using [CornerShot](https://github.com/zeronetworks/cornershot), the team can discover that host C actually has access to target X, so propagation towards target X should go through host C first.
+
+```other
++-----+        +-----+          +-----+
+|     |        |     | filtered |     |
+|  A  +-------->  B  +----X--->(p) X  |
+|     |        |     |          |     |
++-----+        +-----+          +-(p)-+
+ source      carrier        target
+   +                               ^
+   |                               |
+   |           +-----+             |
+   |           |     |   open      |
+   +---------->+  C  +-------------+
+               |     |
+               +-----+
+```
+
+By default it will scan for the following ports : 135, 445, 3389, 5985, 5986.
+We can use **-tp** in order to be specify other ports
+
+```bash
+# Perform a scan of TARGET_IP through CARRIER_IP
+python -m cornershot USERNAME PASSWORD DOMAIN CARRIER_IP TARGET_IP
+```
+
 #### Side Note: Packet Capture
 
 There are some scenarios were we need to stay under the radar as much as possible and a big nmap can be very noisy.
