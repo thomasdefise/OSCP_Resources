@@ -620,12 +620,14 @@ Check for the following access tokens
   - reg save hklm\security security.hive
 
   &#8594; mimikatz
+
 - SeImpersonatePrivilege
   &#8594; PrintSpoofer
 
   ```bash
   PrintSpoofer.exe -i -c powershell
   ```
+  How it works is explained in details [here](https://itm4n.github.io/printspoofer-abusing-impersonate-privileges/)
 
 - SeLoadDriverPrivilege: Load malicious driver [Capcom.sys](https://github.com/FuzzySecurity/Capcom-Rootkit) using [EoPLoadDriver](https://github.com/TarlogicSecurity/EoPLoadDriver/)
 
@@ -974,12 +976,12 @@ For more information about that technique refer to [T1547.001 - Boot or Logon Au
 DLL hijacking is an attack involves a  DLL taking over from a legitimate DLL.
 Here are the variations:
 
-- DLL replacement: replace a legitimate DLL with an evil DLL.
-- DLL search order hijacking: DLLs specified by an application without a path are searched for in fixed locations in a specific order
-- Phantom DLL hijacking: drop an evil DLL in place of a missing/non-existing DLL that a legitimate application tries to load
-- DLL redirection: change the location in which the DLL is searched for, e.g. by editing the %PATH% environment variable, or .exe.manifest / .exe.local files to include the folder containing the evil DLL
-- WinSxS DLL replacement: replace the legitimate DLL with the evil DLL in the relevant WinSxS folder of the targeted DLL.
-- Relative path DLL Hijacking: copy (and optionally rename) the legitimate application to a user-writeable folder, alongside the evil DLL.
+- **DLL replacement**: replace a legitimate DLL with an evil DLL.
+- **DLL search order hijacking**: DLLs specified by an application without a path are searched for in fixed locations in a specific order
+- **Phantom DLL hijacking**: drop an evil DLL in place of a missing/non-existing DLL that a legitimate application tries to load
+- **DLL redirection**: change the location in which the DLL is searched for, e.g. by editing the %PATH% environment variable, or .exe.manifest / .exe.local files to include the folder containing the evil DLL
+- **WinSxS DLL replacement**: replace the legitimate DLL with the evil DLL in the relevant WinSxS folder of the targeted DLL.
+- **Relative path DLL Hijacking**: copy (and optionally rename) the legitimate application to a user-writeable folder, alongside the evil DLL.
 
 #### DLL search order hijacking
 
@@ -989,11 +991,18 @@ Microsoft once mentionned the following
 
 Here is the order:
 
-1) 32-bit System directory (C:\Windows\System32)
-2) 16-bit System directory (C:\Windows\System)
-3) Windows directory (C:\Windows)
-4) The current working directory (CWD)
-5) Directories in the PATH environment variable (system then user)
+1) The directory from which the application is loaded
+2) The system directory (C:\Windows\System32)
+3) The 16-bit system directory (C:\Windows\System)
+4) The Windows directory (C:\Windows)
+5) The current directory (same as 1 unless otherwise specified)
+6) The directories that are listed in the PATH environment variable
+
+![DLL Search Order](DLLSearchOrder.png)
+
+Source: <https://itm4n.github.io/windows-dll-hijacking-clarified/>
+
+in this context, the term *Known DLL*K has a very specific meaning. These DLLs are listed in the *HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\KnownDLLs* registry key and are guaranteed to be loaded from the System folder.
 
 *Note that services running under SYSTEM does not search through user path environment.*
 
