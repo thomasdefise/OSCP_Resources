@@ -229,6 +229,28 @@ There is a new version which is hping3
 
 <http://blog.tofte-it.dk/ethical-hacking-nmap-scruby-hping3/>
 
+#### Automated Scans
+
+##### NmapAutomator
+
+The main goal of [nmapAutomator](https://github.com/21y4d/nmapAutomator) for this script is to automate all of the process of recon/enumeration that is run every time
+
+It uses nmap Vulners, nikto, sslscan, joomscan, wpscan, droopescan, smbmap, enulinux, dnsrecon and odat
+
+Here are the type of scans:
+
+- **Quick**: Shows all open ports quickly (~15 seconds)
+- **Basic**: Runs Quick Scan, then runs a more thorough scan on found ports (~5 minutes)
+- **UDP**: Runs "Basic" on UDP ports (~5 minutes)
+- **Full: Runs a full range port scan, then runs a thorough scan on new ports (~5-10 minutes)
+- **Vulns**: Runs CVE scan and nmap Vulns scan on all found ports (~5-15 minutes)
+- **Recon**: Runs "Basic" scan "if not yet run", then suggests recon commands "i.e. gobuster, nikto, smbmap" based on the found ports, then prompts to automatically run them
+- **All**: Runs all the scans consecutively (~20-30 minutes)
+
+```bash
+./nmapAutomator.sh <TARGET-IP> <TYPE> 
+```
+
 #### Through other paths
 
 By using [CornerShot](https://github.com/zeronetworks/cornershot), the team can discover that host C actually has access to target X, so propagation towards target X should go through host C first.
