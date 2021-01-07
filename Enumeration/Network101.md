@@ -242,7 +242,7 @@ Here are the type of scans:
 - **Quick**: Shows all open ports quickly (~15 seconds)
 - **Basic**: Runs Quick Scan, then runs a more thorough scan on found ports (~5 minutes)
 - **UDP**: Runs "Basic" on UDP ports (~5 minutes)
-- **Full: Runs a full range port scan, then runs a thorough scan on new ports (~5-10 minutes)
+- **Full**: Runs a full range port scan, then runs a thorough scan on new ports (~5-10 minutes)
 - **Vulns**: Runs CVE scan and nmap Vulns scan on all found ports (~5-15 minutes)
 - **Recon**: Runs "Basic" scan "if not yet run", then suggests recon commands "i.e. gobuster, nikto, smbmap" based on the found ports, then prompts to automatically run them
 - **All**: Runs all the scans consecutively (~20-30 minutes)
@@ -720,6 +720,8 @@ Tools:
 - [nmblookup](https://www.samba.org/samba/docs/current/man-html/nmblookup.1.html) NetBIOS over TCP/IP client used to lookup NetBIOS names
 - [ridenum](https://github.com/trustedsec/ridenum) is a RID cycling attack that attempts to enumerate user accounts through
 null sessions and the SID to RID enum.
+- [Spray](https://github.com/Greenwolf/Spray) is a password spraying tool for Active Directory credentials.
+
 
 It's usually with **enum4linux** that I have the most information.
 
@@ -734,6 +736,9 @@ enum4linux -a IP                                 # Perform all simple enumeratio
 /opt/impacket/examples/lookupsid.py USER:PASSWORD@victim.com # Enumerate both local and domain users.
 
 /opt/impacket/examples/reg.py ignite/Administrator:Ignite@987@192.168.1.105 query -keyName HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows -s
+
+# Password spraying
+spray.sh -smb IP USERS.txt PASSWORDS.txt AttemptsPerLockoutPeriod LockoutPeriodInMinutes DOMAIN
 ```
 
 You can try connect to a share by doing the following:
