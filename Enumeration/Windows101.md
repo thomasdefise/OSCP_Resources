@@ -1255,6 +1255,21 @@ If we found a privileged file write vulnerability in Windows or in some third-pa
 
 If we found a privileged file write vulnerability in Windows or in some third-party software, we could copy our own version of windowscoredeviceinfo.dll into C:\Windows\Sytem32\ and then have it loaded by the USO service to get arbitrary code execution as NT AUTHORITY\System.
 
+[UsoDllLoader](https://github.com/itm4n/UsoDllLoader) is a a technique that can be used to weaponize privileged file write vulnerabilities on Windows. It provides an alternative to the DiagHub DLL loading "exploit" found by James Forshaw
+
+This solution is composed of two projects: WindowsCoreDeviceInfo and UsoDllLoader.
+
+- **WindowsCoreDeviceInfo**
+It provides a PoC DLL that will start a bind shell on port 1337 (localhost only), whenever the QueryDeviceInformation() function is called. That's the name of the function used by the USO workers.
+
+- **UsoDllLoader** *(optional)*
+It's a stripped-down version of usoclient.exe. It can be run as a regular user to interact with the USO service and have it load windowscoredeviceinfo.dll. Then, it will try to connect to the bind shell. In case of errors, please read the "Known issues" section.
+
+```bash
+# 1. Copy WindowsCoreDeviceInfo.dll to C:\Windows\System32\
+# 2. Use usoclient as a regular user
+usoclient
+```
 
 #### AppInit DLLs
 
