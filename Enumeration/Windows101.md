@@ -1008,6 +1008,18 @@ All ACEs contain the following access control information:
 - A flag that indicates the type of ACE.
 - A set of bit flags that determine whether child containers or objects can inherit the ACE from the primary object to which the ACL is attached.
 
+Access Control Entries describe the allowed and denied permissions for other principals in Active Directory against the securable object.
+
+Some of the Active Directory object permissions and types that we as attackers are interested in:
+
+- **GenericAll**: Full rights to the object (add users to a group or reset user's password)
+- **GenericWrite**: Update object's attributes (i.e logon script)
+- **WriteOwner**: Change object owner to attacker controlled user take over the object
+- **WriteDACL**: Modify object's ACEs and give attacker full control right over the object
+- **AllExtendedRights**: Ability to add user to a group or reset password
+- **ForceChangePassword**: Ability to change user's password
+- **Self (Self-Membership)**: Ability to add yourself to a group
+
 #### Autostarts
 
 ##### Autoruns
@@ -2334,6 +2346,7 @@ This vulnerability allows an attacker to abuse Windows system services to conduc
 - For the "DLL Proxying" part, thanks to itm4n <https://itm4n.github.io/dll-proxying/>
 - For the "Task Scheduler" part, thanks to itm4n <https://itm4n.github.io/localservice-privileges/>
 - For the "Windows Subsystem for Linux" part, thanks to <https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Windows%20-%20Privilege%20Escalation.md#eop---windows-subsystem-for-linux-wsl>
+- For the "DACLs & ACEs" part, thanks to ired.team <https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/abusing-active-directory-acls-aces>
 
 #### Source Todo
 
