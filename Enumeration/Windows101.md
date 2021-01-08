@@ -382,6 +382,27 @@ Get-ChromeCreds "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\<PROFILE>
 Get-ChromeCookies "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\<PROFILE>\Cookies"
 ```
 
+For saved session information from PuTTY, WinSCP, FileZilla, SuperPuTTY, and RDP there is SessionGopher
+
+[SessionGopher](https://github.com/Arvanaghi/SessionGopher) is a PowerShell tool that finds and decrypts saved session information for remote access tools.
+
+SessionGopher works by querying the HKEY_USERS hive for all users who have logged onto a domain-joined box at some point.
+
+Command options:
+
+- **-Thorough**: Search all drives for PuTTY private key (.ppk), Remote Desktop Connecton (.rdp), and RSA (.sdtid) files.
+- **-o**: Outputs the data to a folder of .csv files
+- **-iL**: Provide a file with a list of hosts to run SessionGopher against, each host separated by a newline.
+- **-AllDomain**: Query Active Directory for all domain-joined systems and run against all of them.
+- **-Target**: Specify a specific host you want to target.
+
+```bash
+# Run localy
+Invoke-SessionGopher -Thorough
+# Run remotly
+Invoke-SessionGopher -AllDomain -u domain.com\USER -p PASSWORD
+```
+
 ##### Data Protection API
 
 Used by Windows to perform symmetric encryption of asymmetric private keys, using a user or system secret as a significant contribution of entropy.
@@ -2007,11 +2028,15 @@ In order to create or forge a Silver Ticket, we need has to gain knowledge of th
 Options:
 
 - **T**: Perform query on the specified domain or forest
+- **-F**: Perform the query at the Active Directory forest level
 - **-Q**: Specify which SPNs to look for
 
 ```bash
-setspn -T victim.local -Q */*
+setspn -T victim.local -F -Q */*
 ```
+
+setspn will not only provide useful information about service users and all the hostnames in AD, but it will also
+tell us which services are running on the systems and even the port
 
 ```bash
 mimikatz.exe
