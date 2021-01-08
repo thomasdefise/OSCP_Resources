@@ -358,6 +358,18 @@ laZagne.exe all -oJ # Search for password within Browsers, Chats, Databases, Sys
 laZagne.exe browsers -oJ # Search for password within Browsers
 ```
 
+Another tool like Lazagne, but this time in Powershell is [mimikittenz](https://github.com/orlyjamie/mimikittenz)
+
+mimikittenz can also easily extract other kinds of juicy info from target processes using regex patterns including but not limited to:
+
+- TRACK2 (CreditCard) data from merchant/POS processes
+- PII data
+- Encryption Keys & All the other goodstuff
+
+```bash
+Invoke-mimikittenz.ps1
+```
+
 ##### Data Protection API
 
 Used by Windows to perform symmetric encryption of asymmetric private keys, using a user or system secret as a significant contribution of entropy.
