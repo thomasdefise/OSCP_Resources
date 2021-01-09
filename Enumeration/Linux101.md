@@ -5,6 +5,10 @@
 [LinEnum](https://github.com/rebootuser/LinEnum)
 [linPEAS](https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite)
 
+```bash
+./LinEnum.sh
+```
+
 #### Distribution
 
 ```bash
@@ -30,6 +34,11 @@ ls /boot | grep vmlinuz- # Grep the name the Linux kernel executable within the 
 ```
 
 ##### Know exploits
+
+[linux-exploit-suggester](https://github.com/mzet-/linux-exploit-suggester) is designed to assist in detecting security deficiencies for given Linux kernel/Linux-based machine. It provides following functionality:
+
+- Assessing kernel exposure on publicly known exploits
+- Verifying state of kernel hardening security measures **--checksec**
 
 - [CVE-2009-1185](https://nvd.nist.gov/vuln/detail/CVE-2009-1185): udev
   - [Linux Kernel 2.6 (Debian 4.0 / Ubuntu / Gentoo) Udev < 1.4.1](http://www.madirish.net/370)
