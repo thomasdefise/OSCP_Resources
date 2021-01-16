@@ -860,6 +860,8 @@ For more information about that technique refer to [T1053.003 - Scheduled Task/J
 
 #### $PATH
 
+##### User
+
 ```bash
 echo $PATH
 ```
@@ -867,6 +869,31 @@ echo $PATH
 If you notice '.' in environment PATH variable it means that the logged user can execute binaries/scripts from the current directory and it can be an excellent technique for an attacker to escalate root privilege.
 
 For more information about that technique refer to [T1574.007 - Hijack Execution Flow: Path Interception by PATH Environment Variable](https://attack.mitre.org/techniques/T1574/007/)
+
+##### Root
+
+It may be possible that the PATH of root has been modified for a certain reason.
+If there is a directory in the PATH of root where we have writable access, we could stage malicious scripts, binairies or librairies so that there are executed as root when he execute them.
+
+```bash
+grep -nr PATH /etc/profile.d
+cat /root/.bash_profile -print 2>/dev/null
+cat /root/.bashrc -print 2>/dev/null
+```
+
+You could search for *export PATH=* and examine what is there.
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure root PATH Integrity
+
+For more information about that technique refer to [T1574.007 - Hijack Execution Flow: Path Interception by PATH Environment Variable](https://attack.mitre.org/techniques/T1574/007/)
+
+###### *If you don't know, now you know: [.bashrc & .bash_profile](https://medium.com/@makersu/bash-profile-vs-bashrc-4834eaf73379)*
+
+bashrc is executed for every user who run a bash shell. It sets the default prompt, as well as adding aliases
+
+bash_profile is is used by each user to enter information that are specific to them. It is executed only when the user logs in
 
 #### Systemd PATH
 
