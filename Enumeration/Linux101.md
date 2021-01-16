@@ -11,6 +11,8 @@
 
 #### Distribution
 
+Commands, file structure may depends on which distribution we are. It will be helpfull to know on which distribution when we start enumerate on the system.
+
 ```bash
 cat /etc/issue # Text file which contains a message or system identification to be printed before the login prompt.
 cat /etc/*-release
@@ -22,7 +24,9 @@ cat /etc/redhat-release
 lsb_release -all # Prints certain LSB (Linux Standard Base) and Distribution information
 ```
 
-##### Kernel Version
+#### Kernel Version
+
+Kernel are often a valuable place to look for exploits.
 
 ```bash
 at /proc/version # This file specifies the version of the Linux kernel, the version of gcc used to compile the kernel, and the time of kernel compilation.
@@ -51,12 +55,29 @@ ls /boot | grep vmlinuz- # Grep the name the Linux kernel executable within the 
 
 For more, refer to the following link [linux-kernel-exploits](https://github.com/SecWiki/linux-kernel-exploits)
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture Control*: Have a Patch & Vulnerability process in order to regularly software updates to mitigate exploitation risk.
+
 For more information about that technique refer to [T1068 - Exploitation for Privilege Escalation](https://attack.mitre.org/techniques/T1068/)
+
+#### Hardware information
+
+There are multiple goals:
+
+- Get the architecture of the CPU (32-bit or 64-bit)
+- Know if we are on a virtualized, containerized or not environment.
+
+```bash
+lscpu # CPU info
+```
 
 ###### Network
 
-> / / / To Finish
+There are multiple goals:
 
+- Get information about the environment, such as others assets, what are the available services such as DNS server
+- Get an idea of which services are on the machines
 
 ```bash
 cat /etc/resolv.conf          # Display DNS resolver(s)
@@ -90,51 +111,91 @@ Netstat options:
 
 When looking at netstat, we could see programs that are only accessible from the box, but could be abused from the system.
 
-Note that within *squid.conf*, we could find:
+:white_check_mark: How to protect against or detect that technique:
 
-- domain names
-- cachemgr_passwd directive, which allows you to protect cache manager pages with a password (cleartext)
-  &rarr; curl -s --user ';PASSWORD' <http://IP/squid-internal-mgr/menu> | grep -v "disabled"
-  &rarr; curl -s --user ';PASSWORD' <http://IP/squid-internal-mgr/fqdncache>
-- Addtional information about the subnet
+- *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather system and network information.
+
+For more information about that technique refer to [T1016 - System Network Configuration Discovery](https://attack.mitre.org/techniques/T1016/)
 
 ###### *If you don't know, now you know: [XFRM](http://manpages.ubuntu.com/manpages/trusty/man8/ip-xfrm.8.html)
 
 xfrm is an IP framework for transforming packets (such as encrypting their payloads).
 This framework is used to implement the IPsec protocol suite (with the state  object operating on  the Security Association  Database, and the policy object operating on the Security Policy Database). It is also used for the IP Payload Compression Protocol and features of Mobile IPv6.
 
+###### Network Share Discovery
+
+Network shares may contains usefull information as well as identifying potential systems of interest for lateral movement.
+
+[showmount](https://linux.die.net/man/8/showmount) show mount information for an NFS server
+
+```bash
+# NFS
+# Search for drives
+showmount -a # List both the client hostname or IP address and mounted directory in host:dir format.
+showmount -e # Show the NFS server’s export list.
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Perform network segmentation through network-based and host-based firewall as well as network devices ACL and Private VLAN.
+- *Architecture*: Use the latest version of the protocols used for network share.
+- *Architecture*: Do not allow anonymous enumeration.
+- *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather system and network information.
+- *Active Security*: Monitor network flow that are abnormal.
+
+For more information about that technique refer to [T1135 - Network Share Discovery](https://attack.mitre.org/techniques/T1135/)
+
 ###### Binairies
 
 It may be usefull to know if the following software are availables
 
 - Compiler: gcc, g++, make
+  &rarr; Could be used to compile payload on the target asset
 - Programming language interpreter: pythonX, perl, php, ruby
+  &rarr; Could be used to interpret malicious scripts
 - Container-related: docker, lxc, rkt, kubectl
+  &rarr; There could be a potential attack vector to enumerate
 
 ```bash
 which nmap aws nc ncat netcat nc.traditional wget curl ping gcc g++ make gdb base64 socat python python2 python3 python2.7 python2.6 python3.6 python3.7 perl php ruby xterm doas sudo fetch docker lxc rkt kubectl 2>/dev/null
 ```
 
-###### Screen from Xll
+:white_check_mark: How to protect against or detect that technique:
 
-[xwd](https://linux.die.net/man/1/xwd) dump an image of an X window.
-[xwud](https://linux.die.net/man/1/xwud) is a mage displayer for X,
+- *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather information about installed softwares.
+
+For more information about that technique refer to [T1518 - Software Discovery](https://attack.mitre.org/techniques/T1518/)
+
+###### Peripheral Device Discovery
+
+Peripheral devices may be interesting for the following reason:
+
+- Their could be senstivie data on connected devices.
+- They could be used to staged temporary files.
+- Connected devices may requires a driver which may be vulnerable.
 
 ```bash
-# Capture a screenshot in "XWD X Window Dump image data" format
-xwd -root -out /tmp/test.xpm
-# Conver the image to png
-convert /tmp/test.xpm -resize 1280x1024 /tmp/test.jpg
+# USB
+cat /proc/bus/usb/devices # Lists information about connected USB devices
+lsusb -v # Lists USB device information in a slightly more human readable form
+# SCSI 
+cdrecord -scanbus # Lists SCSI and emulated SCSI drives. 
+# PCMCIA
+tail /var/log/messages # List system messages which can contain USB and PCMCIA information
+# Others
+lshw # List hardware
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather information about peripheral devices.
+
+For more information about that technique refer to [T1120 - Peripheral Device Discovery](https://attack.mitre.org/techniques/T1120/)
 
 ###### Others
 
 ```bash
-# Print environment variables
-printenv
-# Search for drives
-showmount -a # List both the client hostname or IP address and mounted directory in host:dir format.
-showmount -e # Show the NFS server’s export list.
+printenv # Print environment variables
 df -h # Display file system disk space usage in a human readable format
 ls /bin/ # Lists information about all or the specified block devices.
 ls /dev 2>/dev/null | grep -i "sd"
@@ -142,10 +203,7 @@ cat /etc/fstab 2>/dev/null | grep -v "^#" | grep -Pv "\W*\#" 2>/dev/null
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/fstab 2>/dev/null
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/mtab 2>/dev/null
 lpstat -a # Displays status information about the current classes, jobs, and printers
-ls -alh /var/mail/ # Displays the contents of the mail directory
-lsof -i # listing of all Internet and x.25 (HP-UX) network opened files.
 date 2>/dev/null # Date
-lscpu # CPU info
 lsmod # Display which loadable kernel modules are currently loaded. You can then use modinfo on those module
 ```
 
@@ -157,6 +215,27 @@ Those filesystems should be mounted at boot time.
 The mtab file is about the *currently* mounted.
 
 You could find some credentials, for instance when there is a CIFS Windows Share mounted.
+
+###### Screen Capture from Xll
+
+The goal is to gather information that may be displayed on the screen which we may not seen as we are connected through a terminal.
+
+[xwd](https://linux.die.net/man/1/xwd) dump an image of an X window.
+[xwud](https://linux.die.net/man/1/xwud) is a mage displayer for X,
+
+```bash
+# Capture a screenshot in "XWD X Window Dump image data" format
+xwd -root -out /tmp/test.xpm
+# Conver the image to png
+convert /tmp/test.xpm -resize 1280x1024 /tmp/test.jpg
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Restrict the usage of application that can perform screen capture.
+- *Active Defense*: Monitor the usage of application that can perform screen capture.
+
+For more information about that technique refer to [T1113 - Screen Capture](https://attack.mitre.org/techniques/T1518/)
 
 #### Files Enumeration
 
@@ -173,6 +252,7 @@ cat /var/lib/mysql/mysql/user.MYD
 cat /root/anaconda-ks.cfg
 find / -name *.bak -print 2>/dev/null # Commonly used to signify a backup copy of a file
 find / -name *.jks -print 2>/dev/null
+find / -name squid.conf -print 2>/dev/null
 find / -name .htpasswd -print 2>/dev/null
 find / -name .git -print 2>/dev/null
 find / -name .ipfs -print 2>/dev/null
@@ -219,6 +299,13 @@ locate password | more
 
 - **.git**: cc [Files101](Files101.md)
 
+- **squid.conf**: Squid proxy confif file
+  - domain names
+  - cachemgr_passwd directive, which allows you to protect cache manager pages with a password (cleartext)
+    &rarr; curl -s --user ';PASSWORD' <http://IP/squid-internal-mgr/menu> | grep -v "disabled"
+    &rarr; curl -s --user ';PASSWORD' <http://IP/squid-internal-mgr/fqdncache>
+  - Addtional information about the subnet
+
 [Mimipenguin](https://github.com/huntergregal/mimipenguin) is a tool used to dump the login password from the current linux desktop user.
 Mimipenguin requires root permissions.
 It can retreive the following passwords from:
@@ -236,7 +323,26 @@ For more information about those techniques refer to:
 - [T1552.003 - Unsecured Credentials: Bash History](https://attack.mitre.org/techniques/T1552/001/)
 - [T1552.004 - Unsecured Credentials: Private Keys](https://attack.mitre.org/techniques/T1552/004/)
 
-##### Clipboard
+##### Mails
+
+Email on local systems can contain sensitive information
+
+```bash
+ls -alh /var/mail/ # Displays the contents of the mail directory
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Perform the *Principle of least privilege* on shared mailbox.
+- *Architecture*: Encrypt folder that may contains sensitive data such as mails.
+- *Active Defense*: Monitor processes and command-line arguments for actions that gather local email files.
+  - If it is unusual processes based on a given baseline
+
+For more information about that technique refer to [T1114 - Email Collection: Local Email Collection](https://attack.mitre.org/techniques/T1114/001/)
+
+##### Clipboad
+
+Clipboad can contain sensitive data such as a password copied from a password manager.
 
 [xclip](https://linux.die.net/man/1/xclip) command line interface to X selections (clipboard)
 
@@ -253,6 +359,11 @@ if [ `which xclip 2>/dev/null` ]; then
   fi
 ```
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Restrict the usage of application that are designed to access clipboard data.
+- *Active Defense*: Monitor processes and command-line arguments for actions that access clipboard data which are non-user-driven.
+
 For more information about that technique refer to [T1115 - Clipboard Data](https://attack.mitre.org/techniques/T1115/)
 
 ##### Authentication Logs
@@ -268,6 +379,10 @@ cat /var/log/secure
 
 Keep authentication logs for both successful or failed logins, and authentication processes.
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Restrict the access towards sensitive logs following a the need-to-know principle.
+
 ##### Misconfigured services
 
 ```bash
@@ -282,7 +397,7 @@ cat /etc/cups/cupsd.conf             # CUPS scheduler (Print Server)
 cat /etc/printer.conf                # Printer configuration file for cups
 cat /etc/inetd.conf                  # internet service daemon
 cat /etc/apache2/apache2.conf        # Apache 2
-cat /etc/......                      # MySQL
+cat /etc/mysql/mysql.conf            # MySQL
 ls /etc/pure-ftpf/conf
 car /etc/pure-ftpf/pure-ftpf.conf
 cat /etc/httpd/conf/httpd.conf
@@ -314,6 +429,8 @@ find /etc -name squid.conf -print 2>/dev/null
 
 - **/etc/cups/cupsd.conf**: You could found credentials or others usefull information in it
 - **/etc/printer.conf**: You could found credentials or others usefull information in it
+
+
 
 ###### *If you don't know, now you know: **[NFS Root Squashing](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/4/html/security_guide/s2-server-nfs-noroot)**
 
@@ -349,6 +466,11 @@ Interesting files:
 
 ##### Websites location enumeration
 
+Websites location may help us to:
+
+- Find credentials and/or comments in files that are only available on the back-end
+- Websites files that are not yet available in either dev, stage, test or production
+
 ```bash
 ls -alhR /var/www/
 ls -alhR /srv/www/htdocs/
@@ -356,6 +478,8 @@ ls -alhR /usr/local/www/apache22/data/
 ls -alhR /opt/lampp/htdocs/
 ls -alhR /var/www/html/
 ```
+
+
 
 ### Getting /bin/sh
 
