@@ -24,10 +24,9 @@ cat /etc/redhat-release
 lsb_release -all # Prints certain LSB (Linux Standard Base) and Distribution information
 ```
 
-#### Kernel Version
+#### Kernel
 
-Kernel are often a valuable place to look for exploits.
-
+The kernel is the core of the operating system and is a valuable place to look for exploits
 ```bash
 at /proc/version # This file specifies the version of the Linux kernel, the version of gcc used to compile the kernel, and the time of kernel compilation.
 uname -a # Print all system information
@@ -35,7 +34,17 @@ uname -mrs # Print the machine hardware name *m*, kernel release *r* and the ker
 rpm -q kernel # Print the kernel version using the RPM Package Manager
 dmesg | grep Linux # Print or control the kernel ring buffer
 ls /boot | grep vmlinuz- # Grep the name the Linux kernel executable within the boot partition
+lsmod # Display which loadable kernel modules are currently loaded. You can then use modinfo on those module
+modinfo -d MODULE # Display information about a Linux Kernel module
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure that unused kernel modules are removed from the system.
+- *Architecture*: Ensure that unused old kernel versions are removed from the system.
+- *Architecture*: Configure kernel security using tools like [sysctl]() 
+- *Architecture*: Configure boot parameters that disables potential attack vector
+- *Architecture*: Understand the difference between a "Stable" and a "Long Term Support" kernel version and choose the options that fits the best your needs.
 
 ##### Know exploits
 
@@ -58,6 +67,7 @@ For more, refer to the following link [linux-kernel-exploits](https://github.com
 :white_check_mark: How to protect against or detect that technique:
 
 - *Architecture Control*: Have a Patch & Vulnerability process in order to regularly software updates to mitigate exploitation risk.
+- *Architecture Control*: Ensure that your distribution(s) is/are still supported and that vulnerability patches are created when vulnerability are released.
 
 For more information about that technique refer to [T1068 - Exploitation for Privilege Escalation](https://attack.mitre.org/techniques/T1068/)
 
@@ -66,6 +76,7 @@ For more information about that technique refer to [T1068 - Exploitation for Pri
 There are multiple goals:
 
 - Get the architecture of the CPU (32-bit or 64-bit).
+- Check if the CPU is affected by a know exploit
 - Get to know on which type of environment we are (Virtualized, Containerized, ...).
 
 ```bash
@@ -73,10 +84,26 @@ lscpu                # CPU info
 free                 # Display amount of free and used memory in the system
 cat /proc/meminfo    # Report the amount of free and used memory (both physical and swap)
 vmstat               # Report virtual memory statistics
+dmesg | less         # List hardware which hardware was detected and which drivers were loaded by the kernel at boot time.
+```
+
+lscpu will even show you towards by which vulnerabilities are you CPU affected or not and vulnerable or mitigated. Here below is an example
+
+```bash
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX unsupported
+Vulnerability L1tf:              Mitigation; PTE Inversion
+Vulnerability Mds:               Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Spec store bypass: Vulnerable
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Full generic retpoline, STIBP disabled, RSB filling
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
 ```
 
 :white_check_mark: How to protect against or detect that technique:
 
+- *Architecture*: Enable CPU mitigations to know vulnerabilities
 - *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather hardware information.
 
 For more information about that technique refer to [T1082 - https://attack.mitre.org/techniques/T1082/](https://attack.mitre.org/techniques/T1082/)
@@ -122,6 +149,7 @@ When looking at netstat, we could see programs that are only accessible from the
 
 :white_check_mark: How to protect against or detect that technique:
 
+- *Architecure*: Disable IPv6 if it is not needed ()
 - *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather system and network information.
 
 For more information about that technique refer to [T1016 - System Network Configuration Discovery](https://attack.mitre.org/techniques/T1016/)
@@ -193,10 +221,12 @@ cdrecord -scanbus # Lists SCSI and emulated SCSI drives.
 tail /var/log/messages # List system messages which can contain USB and PCMCIA information
 # Others
 lshw # List hardware
+lspci # List PCI buses
 ```
 
 :white_check_mark: How to protect against or detect that technique:
 
+- *Architecture*: Restrict the */proc* pseudo-file-system so that users can only see their processes (cc [hidepid](https://linux-audit.com/linux-system-hardening-adding-hidepid-to-proc/))
 - *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather information about peripheral devices.
 
 For more information about that technique refer to [T1120 - Peripheral Device Discovery](https://attack.mitre.org/techniques/T1120/)
@@ -213,7 +243,6 @@ grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/fstab 2>/d
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/mtab 2>/dev/null
 lpstat -a # Displays status information about the current classes, jobs, and printers
 date 2>/dev/null # Date
-lsmod # Display which loadable kernel modules are currently loaded. You can then use modinfo on those module
 ```
 
 ###### *If you don't know, now you know: ([fstab](https://man7.org/linux/man-pages/man5/fstab.5.html)/[mtab](https://www.unix.com/man-page/v7/5/mtab/))*
@@ -588,7 +617,7 @@ cat /etc/passwd | egrep -e '/bin/(ba)?sh' # Enumerate users that has shell acces
 id # Print real and effective user and group IDs
 ```
 
-Some Linux were affected by a bug that when the User ID was superior to INT_MAX, you could escalate privileges,
+Some Linux were affected by a bug that when the User ID was superior to INT_MAX, you could escalate privileges.
 
 ```bash
 systemd-run -t /bin/bash
