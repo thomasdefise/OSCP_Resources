@@ -69,8 +69,17 @@ There are multiple goals:
 - Get to know on which type of environment we are (Virtualized, Containerized, ...).
 
 ```bash
-lscpu # CPU info
+lscpu                # CPU info
+free                 # Display amount of free and used memory in the system
+cat /proc/meminfo    # Report the amount of free and used memory (both physical and swap)
+vmstat               # Report virtual memory statistics
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather hardware information.
+
+For more information about that technique refer to [T1082 - https://attack.mitre.org/techniques/T1082/](https://attack.mitre.org/techniques/T1082/)
 
 ###### Network
 
