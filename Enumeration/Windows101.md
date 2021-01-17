@@ -2600,6 +2600,14 @@ We can DCSync any account we want from the Domain Controller, even being not Dom
 mimikatz # lsadump::dcsync /user:DOMAIN\krbtgt /domain:DOMAIN
 ```
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Embrace the principle of least privilege.
+- *Architecture*: Do not allow users to possess administrative privileges across security boundaries.
+- *Passive Defense*: Routinely audit AdminSDHolder permissions for unauthorized or unnecessary permissions.
+- *Active Defense*: Monitor changes to the AdminSDHolder container ACL (Event ID 5136 in the Audit Directory Service Changes)
+- *Active Defense*: Monitor creation and deletion of server objects (NTDSDSA and Global Catalog) within sites (Event ID 5136 and Event ID 5141 in the Audit Directory Service Changes)
+
 ###### *If you don't know, now you know: [AdminSDHolder](https://docs.microsoft.com/en-us/previous-versions/technet-magazine/ee361593(v=msdn.10)?redirectedfrom=MSDN)*
 
 Active Directory protects "protected groups" (Administrators groups members, Domain Controllers group members, krbtgt account, ...) in order to prevent privilege elevation by users
