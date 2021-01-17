@@ -1628,6 +1628,12 @@ A trust is a relationship, which you establish between domains that makes it pos
     - *Transitivity*: Transitive
     - *Direction*: Can be either 1-way or 2-way
 
+###### *If you don't know, now you know: [Global Catalog](https://docs.microsoft.com/en-us/windows/win32/ad/global-catalog)*
+
+The Global Catalog is used to perform forest-wide searches.
+It contains information about all objects in a forest, as well as a subset of attributes for each object.
+It can be interogated through LDAP over port 3268 or LDAP/SSL over port 3269.
+
 ###### *If you don't know, now you know: [Directory Partitions](https://docs.microsoft.com/en-us/windows/win32/ad/naming-contexts-and-partitions)*
 
 Each domain controller in a domain forest controlled by Active Directory Domain Services includes directory partitions.
