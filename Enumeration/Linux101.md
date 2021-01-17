@@ -40,7 +40,7 @@ modinfo -d MODULE # Display information about a Linux Kernel module
 
 :white_check_mark: How to protect against or detect that technique:
 
-- *Architecture*: Ensure that unused kernel modules are removed from the system.
+- *Architecture*: Ensure that unused kernel modules are removed from the system, or at least blacklisted (cc [Blacllist parameter](https://man7.org/linux/man-pages/man5/modprobe.d.5.html))
 - *Architecture*: Ensure that unused old kernel versions are removed from the system.
 - *Architecture*: Configure kernel security using tools like [sysctl]() 
 - *Architecture*: Configure boot parameters that disables potential attack vector
@@ -66,6 +66,7 @@ For more, refer to the following link [linux-kernel-exploits](https://github.com
 
 :white_check_mark: How to protect against or detect that technique:
 
+- *Architecture Control*: Ensure package manager repositories are configured
 - *Architecture Control*: Have a Patch & Vulnerability process in order to regularly software updates to mitigate exploitation risk.
 - *Architecture Control*: Ensure that your distribution(s) is/are still supported and that vulnerability patches are created when vulnerability are released.
 
@@ -135,8 +136,6 @@ ip xfrm state list            # Print out the list of existing state in xfrm
 /var/log/messages I grep DHCP # List DHCP assignments 
 ```
 
-Also check if tcpdump is available, you could maybe sniff some interesting things.
-
 Netstat options:
 
 - **--a**: List all listening and non-listening sockets.
@@ -146,6 +145,27 @@ Netstat options:
 - **-p**: List with PID
 
 When looking at netstat, we could see programs that are only accessible from the box, but could be abused from the system.
+
+We can also check if the machine is forwarding packets
+
+```bash
+# IP Forwarding
+grep "net\.ipv4\.ip_forward" /etc/sysctl.conf /etc/sysctl.d/*
+grep "net\.ipv6\.conf\.all\.forwarding" /etc/sysctl.conf /etc/sysctl.d/*
+# ICMP Redirects
+grep "net\.ipv4\.conf\.all\.send_redirects" /etc/sysctl.conf 
+grep "net\.ipv4\.conf\.default\.send_redirects" /etc/sysctl.conf 
+```
+
+```bash
+grep "net\.ipv4\.conf\.all\.accept_source_route" /etc/sysctl.conf/etc/sysctl.d/*
+grep "net\.ipv4\.conf\.default\.accept_source_route" /etc/sysctl.conf/etc/sysctl.d/*
+grep "net\.ipv6\.conf\.all\.accept_source_route" /etc/sysctl.conf/etc/sysctl.d/*
+grep "net\.ipv6\.conf\.default\.accept_source_route" /etc/sysctl.conf/etc/sysctl.d/*
+```
+
+
+Also check if tcpdump is available, you could maybe sniff some interesting things.
 
 :white_check_mark: How to protect against or detect that technique:
 
@@ -187,10 +207,13 @@ For more information about that technique refer to [T1135 - Network Share Discov
 It may be usefull to know if the following software are availables
 
 - Compiler: gcc, g++, make
+
   &rarr; Could be used to compile payload on the target asset
 - Programming language interpreter: pythonX, perl, php, ruby
+
   &rarr; Could be used to interpret malicious scripts
 - Container-related: docker, lxc, rkt, kubectl
+
   &rarr; There could be a potential attack vector to enumerate
 
 ```bash
@@ -301,6 +324,9 @@ find / -name id_rsa* -print 2>/dev/null
 find / -name authorized_keys -print 2> /dev/null
 cat /etc/security/opasswd
 find . -name "*.php" -print0 | xargs -0 grep -i -n "var $password" # Search for password in PHP file (cc Joomla)
+grep "^\s*password" /boot/grub/menu.lst
+grep "^\s*GRUB2_PASSWORD" /boot/grub2/user.cfg
+grep "^\s*password" /boot/grub/grub.cfg
 locate password | more
 ```
 
@@ -343,6 +369,12 @@ locate password | more
     &rarr; curl -s --user ';PASSWORD' <http://IP/squid-internal-mgr/menu> | grep -v "disabled"
     &rarr; curl -s --user ';PASSWORD' <http://IP/squid-internal-mgr/fqdncache>
   - Addtional information about the subnet
+
+- **/boot/grub/menu.lst**: Old name of the GRUB configuration file. In some environments, such as kiosks, it may be appropriate to lock down the boot loader to require authentication before performing certain operations.
+  &rarr; The *password* and *password_pbkdf2* commands can be used to define users, each of which has an associated password. (More info [Here](https://www.gnu.org/software/grub/manual/grub/grub.html#Authentication-and-authorisation))
+- **/boot/grub/grub.cfg**: GRUB configuration file.
+- **/boot/grub2/user.cfg**:
+   &rarr; Hashcat mode 7200
 
 [Mimipenguin](https://github.com/huntergregal/mimipenguin) is a tool used to dump the login password from the current linux desktop user.
 Mimipenguin requires root permissions.
@@ -419,6 +451,81 @@ Keep authentication logs for both successful or failed logins, and authenticatio
 :white_check_mark: How to protect against or detect that technique:
 
 - *Architecture*: Restrict the access towards sensitive logs following a the need-to-know principle.
+
+##### Core dumps
+
+Core dumps can hold senstive information.
+Most Linux systems have core dumps enabled by default.
+
+Note that each distribution deals differently with core dumps and the default settings.
+
+- **/var/crash**: represents the file system path in which the kdump saves the vmcore file.
+- **/var/spool**: contains data which is awaiting some kind of later processing
+- **/var/lib/systemd/coredump**
+
+[Apport](https://wiki.ubuntu.com/Apport) collects potentially sensitive data, such as core dumps, stack traces, and log files.
+Apport is not enabled by default in stable releases, even if it is installed.
+
+```bash
+# Extract the fields of a problem report to separate files
+apport-unpack report.crash reportDirectory
+cd reportDirectory/
+# Use the CoreDump dump within gdb
+gdb `cat ExecutablePath` CoreDump
+bt 
+```
+
+[apport-retrace](http://manpages.ubuntu.com/manpages/bionic/man1/apport-retrace.1.html) regenerate a crash report's stack traces (both the simple and the threaded one) from an apport crash report from the included core dump
+
+```bash
+apport-retrace -g CRASHFILE.crash
+```
+
+[Kdump](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/kernel_administration_guide/kernel_crash_dump_guide) is a kernel crash dumping mechanism that allows you to save the contents of the system’s memory for later analysis.
+
+kdump service is installed and activated by default on new Red Hat Enterprise Linux 7 installations.
+
+With kdump, when a kernel crash is captured, the core dump can be either stored as a file in a local file system, written directly to a device, or sent over a network using the NFS (Network File System) or SSH (Secure Shell) protocol.
+
+The kdump saves the vmcore file in /var/crash/var/crash
+
+Here below are some commands to see if it's active
+
+```bash
+# Check if the kdump service is enabled
+systemctl is-active kdump
+
+cat /proc/sys/kernel/sysrq
+cat /proc/sysrq-trigger
+```
+
+In order to analyse a vmcore dump file, we need both the crash and kernel-debuginfo packages installed.
+
+```bash
+crash /usr/lib/debug/lib/modules/kernel/vmlinux /var/crash/timestamp/vmcore
+
+crash> log       # Display the kernel message buffer.
+crash> help log  # Display more information on the log command usage.
+crash> bt        # Display the kernel stack trace.
+crash> vm        # Display virtual memory information of the current context.
+crash> files     # Display information about open files of the current context.
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure core dumps are restricted.
+- *Architecture*: Ensure that tools related to interact with core dumps are regularly update.
+- *Active Defense*: Monitor the usage of core dumps tools.
+
+###### *If you don't know, now you know: **[Core Dump](https://wiki.ubuntu.com/DebuggingProgramCrash)**
+
+**Backtrace** shows a listing of which program functions are still active.
+By getting a backtrace at the point of a bug, a developer may be able to isolate where that bug is, because it will narrow down to the function.
+
+**Valgrind** is a suite of tools for debugging and profiling programs.
+
+Under a Linux-based system, every userspace process has to interact with its environment through the kernel. And it does this by invoking system calls.
+**Strace** is a utility that intercepts and logs these system calls. In this way, you can watch how a program interacts with the system, which is useful for tracking down behavioural issues.
 
 ##### Misconfigured services
 
@@ -577,6 +684,84 @@ tmux -S /tmp/dev_sess attach -t 0
 
 ### Defense Enumeration
 
+#### SELinux
+
+**Security-Enhanced Linux (SELinux)** is a Linux kernel security module that provides a mechanism for supporting access control security policies, including mandatory access controls (MAC).
+
+```bash
+# SELinux
+rpm -q libselinux
+dpkg -s libselinux1
+
+# Get the current mode of SELinux
+getenforce 
+grep SELINUX=enforcing /etc/selinux/config
+
+sestatus # SELinux status tool
+grep SELINUXTYPE /etc/selinux/config
+# SELINUXTYPE=targeted -> This default policy applies access controls to certain (targeted) processes.
+# SELINUXTYPE=mls -> Multi-Level Security
+
+# For grub based systems check if SELinux is enabled at boot time (no kernel line has the selinux=0 or enforcing=0 parameters set)
+grep "^\s*kernel" /boot/grub/menu.lst
+# For grub2 based systems check if SELinux is enabled at boot time (no kernel line has the selinux=0 or enforcing=0 parameters set)
+grep "^\s*linux" /boot/grub2/grub.cfg
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Only privileged user that needs to maintain or see the SELinux configuration should be able to see his configuration.
+- *Active Moniroting*: Monitor changes made to the SELinux configuration
+
+#### TCP_wrappers
+
+The **TCP_wrappers** service provides access control list restrictions and logging for all service requests to the service it wraps.
+
+TCP_wrappers implements access by using two files:
+
+- **/etc/hosts.allow**: Specifies which IP addresses are permitted to connect to the host.
+- **/etc/hosts.deny**: Specifies which IP addresses are not permitted to connect to the host. It is intended to be used in conjunction with the /etc/hosts.allow file
+
+Because access rules in *hosts.allow* are applied first, they **take precedence over rules specified in hosts.deny**. Therefore, if access to a service is allowed in hosts.allow, a rule denying access to that same service in hosts.deny is ignored.
+
+```bash
+# /etc/hosts.allow should contains only the network allowed per service if TCP_wrappers is in used and correctly setup
+cat /etc/hosts.allow
+# /etc/hosts.deny should contains "ALL: ALL" if TCP_wrappers is in used and correctly setup
+cat /etc/hosts.deny
+```
+
+*Note that some Linux distributions have deprecated the use of TCP Wrappers in favor of value-added firewall solutions.*
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Only privileged user that needs to maintain or see the TCP Wrapper configuration should be able to see his configuration.
+- *Active Moniroting*: Monitor changes made to the TCP Wrapper configuration
+
+#### AppArmor
+
+AppArmor is a Linux kernel security module that allows the system administrator to restrict programs' capabilities with per-program profiles.
+
+```bash
+# AppArmor
+rpm -q apparmor
+dpkg -s apparmor
+
+
+# For grub based systems check if SELinux is enabled at boot time (no kernel line has the apparmor=0 parameter set)
+grep "^\s*kernel" /boot/grub/menu.lst
+# For grub2 based systems check if SELinux is enabled at boot time (no kernel line has the apparmor=0 parameter set)
+grep "^\s*linux" /boot/grub2/grub.cfg
+
+# Check the AppArmor profiles are enforced
+apparmor_status
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Only privileged user that needs to maintain or see the AppArmor configuration should be able to see his configuration.
+- *Active Moniroting*: Monitor changes made to the AppArmor configuration
+
 #### Commands to know
 
 ```bash
@@ -588,16 +773,17 @@ export HISTFILESIZE=0            # Set history max lines to 0
 export HISTSIZE=0                # Set history max commands to 0
 unset HISTFILE                   # Disable history logging (need to logout to take effect)
 kill -9 $$                       # Kills current session
-ln /dev/null ~/.bash_history -sf # Permanently send all bash history commands to /dev/null 
+ln /dev/null ~/.bash_history -sf # Permanently send all bash history commands to /dev/null
+
+# Check if it logs packets with impossible addresses to kernel log
+grep "net\.ipv4\.conf\.all\.log_martians" /etc/sysctl.conf /etc/sysctl.d/*
+grep "net\.ipv4\.conf\.default\.log_martians" /etc/sysctl.conf 
 ```
 
-**Security-Enhanced Linux (SELinux)** is a Linux kernel security module that provides a mechanism for supporting access control security policies, including mandatory access controls (MAC).
+:white_check_mark: How to protect against or detect that technique:
 
-```bash
-# SELinux
-getenforce # Get the current mode of SELinux
-sestatus # SELinux status tool
-```
+- *Passive Control*: Use File Integrity Tools For Critical System Files on files that should not be modified outside authorized announced intervention
+- *Active Control*: Monitor access and/or changes to sensitive files
 
 ### Users
 
@@ -629,6 +815,7 @@ The users of the group shadow group can read the content of /etc/shadow and /etc
 
 ##### Kmem
 
+Kmem stands for Kernel Memory.
 The group kmem is able to read the content of the system memory, potentially disclosing data belonging to other processes.
 
 ##### Disk
@@ -809,6 +996,15 @@ sudo sed -i 'timestamp_timeout=-1/' /etc/sudoers
 For more information about that technique refer to [T1548.003 - Abuse Elevation Control Mechanism: Sudo and Sudo Caching](https://attack.mitre.org/techniques/T1548/003/)
 
 https://github.com/7CA700B53CA3/atomic-red-team-pre-subtechniques/blob/d591d963b6e88caec70d33f388299107d05c7a73/atomics/T1206/T1206.md
+
+### Sudo (Single-user mode)
+
+Single-user mode (sometimes known as Maintenance Mode) is a mode in which a multiuser computer operating system boots into a single superuser.
+Administrator strart system in "Single User Mode" to perform certain critical tasks
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure authentication required for single user mode (passwd root)
 
 #### Sudo Killer (Tool)
 
