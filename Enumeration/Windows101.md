@@ -211,7 +211,6 @@ This means that they we have one of those accounts, we can query the Domain Cont
 ldapsearch -x -h 192.168.80.10 -D "USERNAME" -w PASSWORD -b "dc=BASELDAP,dc=info" "(ms-MCS-AdmPwd=*)" ms-MCS-AdmPwd
 ```
 
-
 ##### Powershell Transcript
 
 The Start-Transcript and Stop-transcript cmdlets let you record all of your activities in the PowerShell console to a text file.
@@ -677,6 +676,7 @@ Check for the following access tokens
   ```bash
   PrintSpoofer.exe -i -c powershell
   ```
+
   How it works is explained in details [here](https://itm4n.github.io/printspoofer-abusing-impersonate-privileges/)
 
 - SeLoadDriverPrivilege: Load malicious driver [Capcom.sys](https://github.com/FuzzySecurity/Capcom-Rootkit) using [EoPLoadDriver](https://github.com/TarlogicSecurity/EoPLoadDriver/)
@@ -1002,6 +1002,9 @@ Both System ACL and Discretionary ACL holds a collection of access control entri
 
 Every permission granted in Active Directory is based on these ACE structures.
 
+By default, the DACLs for nearly every AD objectcan be enumerated by **any authenticated user** in the domain through LDAP!
+
+
 How it works
 
 - No DACL &rarr; Full Access for everyone
@@ -1107,7 +1110,7 @@ Check the last leter within the parantheses which is interpretted as the followi
 - **F**: Full access (Edit_Permissions+Create+Delete+Read+Write)
 - **N**: No access
 - **M**: Modify access (Create+Delete+Read+Write)
-- **RX**: Read and eXecute access
+- **RX**: Read and execute access
 - **R**: Read-only access
 - **W**: Write-only access
 
@@ -1208,10 +1211,10 @@ Here are the command to compile it:
 ```bash
 # x86
 i686-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL main.cpp
-i686-w64-mingw32-g++ -shared -o main.dll main.o -Wl,--out-implib,main.a
+i686-w64-mingw32-g++ -shared -o main.dll main.o -Wl,--out-implib, main.a
 # x64
 x86_64-w64-mingw32-g++ -c -DBUILDING_EXAMPLE_DLL main.cpp
-x86_64-w64-mingw32-g++ -shared -o main.dll main.o -Wl,--out-implib,main.a
+x86_64-w64-mingw32-g++ -shared -o main.dll main.o -Wl,--out-implib, main.a
 ```
 
 The **-DBUILDING_EXAMPLE_DLL** compiler option causes the DLL's functions to be declared as "dllexport", meaning that they will be "exported" from the DLL and available to client applications.
@@ -1559,7 +1562,15 @@ Members of the **Administrators** security group have:
 
 Members of the **Group Policy Creators Owners** security group are authorized to create, edit, or delete Group Policy Objects in the domain.
 
-Members of the Schema Admins group can modify the Active Directory schema. 
+Members of the **Account Operators** can creates non administrator accounts and groups on the domain
+Members of the Account Operators group cannot manage the Administrator user account.
+
+Members of the **Schema Admins** group can modify the Active Directory schema.
+
+Members in the **Server Operators** group can administer domain controllers. This group exists only on domain controllers.
+
+Members of the **Backup Operators** group can back up and restore all files on a computer, regardless of the permissions that protect those files.
+
 
 The Enterprise Admins group exists only in the root domain of an Active Directory forest of domains.
 
@@ -1567,6 +1578,8 @@ The Enterprise Admins group exists only in the root domain of an Active Director
 |-|-|
 |Domain Admins|S-1-5-\<domain>-512|
 |Administrators| S-1-5-32-544|
+|Account Operators| S-1-5-32-548|
+|Server Operators|S-1-5-32-549|
 |Group Policy Creators Owners|S-1-5-\<domain>-520|
 |Schema Admins|S-1-5-\<root domain>-518|
 |Enterprise Admins|S-1-5-21-\<root domain>-519|
@@ -2518,7 +2531,6 @@ $excell.RegisterXLL("DLL")
 :warning: Artifacts and Indicators:
 
 - The Excel process loads an unknown DLL.
-
 
 ###### *If you don't know, now you know : [COM/DCOM](https://docs.microsoft.com/en-us/windows/win32/com/the-component-object-model)*
 
