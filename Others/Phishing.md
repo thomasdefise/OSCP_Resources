@@ -1,4 +1,4 @@
-
+# Phishing
 
 ### Link Scanner Evasion
 
@@ -11,15 +11,12 @@ Each web client behaves a bit differently as a result of multiple factors: physi
 - Obsolete Browser Versions:
 - Hard-Coded Referer Header
 
-
-
-
 For the "Link Scanner Evasion" part, thanks to Akamai <https://blogs.akamai.com/sitr/2020/12/evading-link-scanning-security-services-with-passive-fingerprinting.html>
 
 #### MaskPhish
 
-https://github.com/jaykali/maskphish
+[MaskPhish](https://github.com/jaykali/maskphish) is a simple script to hide phishing URL under a normal looking URL
 
-
+```bash
 bash maskphish.sh
-
+```
