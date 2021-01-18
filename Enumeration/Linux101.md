@@ -127,6 +127,7 @@ iptables -L                   # List all rules of all chains
 dnsdomainname                 # Displays the system's DNS domain name
 arp -e                        # Displays the ARP cache
 ip neigh                      # Displays ARP table on new system
+ip link show up               # Display active interfaces
 route                         # Displays the routing table
 netstat -antlup               # Display all TCP,UDP listening and non-listening ports with their associated PID
 ss -anp                       # Dumps socket statistics and displays information
@@ -684,6 +685,58 @@ tmux -S /tmp/dev_sess attach -t 0
 
 ### Defense Enumeration
 
+#### IPTable
+
+Iptables is used to set up, maintain, and inspect the tables of IP packet filter rules in the Linux kernel.
+
+```bash
+# Check if the packet are there
+rpm -q iptables
+dpkg -s iptables
+
+# List rules
+iptables -L
+
+# Determine open ports
+ss -4tuln
+# Determine firewall rules
+iptables -L INPUT -v -n
+
+# IPv6
+# List rules
+ip6tables -L
+# Check if enabled
+grep "^\s*linux" /boot/grub2/grub.cfg | grep -v ipv6.disable=0
+grep "^\s*linux" /boot/grub/grub.cfg | grep -v ipv6.disable=0
+
+# Determine open ports
+ss -6tuln
+# Determine firewall rules
+ip6tables -L INPUT -v -n
+```
+
+#### Auditd
+
+auditd is the userspace component to the Linux Auditing System. It's responsible for writing audit records to the disk.
+
+- **admin_space_left_action**: Determines what action to take when the system has detected that it is low on disk space.
+- **space_left_action**: Determines what action to take when the system has detected that it is starting to get low on disk space.
+- **max_log_file_action**: Determines how to handle the audit log file reaching the max file size.
+
+```bash
+
+# rpm -q audit audit-libs
+# dpkg -s auditd audispd-plugins
+
+# Check if auditd is enabled per runlevels
+chkconfig --list auditd
+
+# Check Auditd setting
+grep space_left_action /etc/audit/auditd.conf
+grep admin_space_left_action /etc/audit/auditd.conf
+grep max_log_file_action /etc/audit/auditd.conf
+```
+
 #### SELinux
 
 **Security-Enhanced Linux (SELinux)** is a Linux kernel security module that provides a mechanism for supporting access control security policies, including mandatory access controls (MAC).
@@ -746,7 +799,6 @@ AppArmor is a Linux kernel security module that allows the system administrator 
 # AppArmor
 rpm -q apparmor
 dpkg -s apparmor
-
 
 # For grub based systems check if SELinux is enabled at boot time (no kernel line has the apparmor=0 parameter set)
 grep "^\s*kernel" /boot/grub/menu.lst
@@ -1529,6 +1581,7 @@ The kernel might **share a kernel buffer** or some physical range of memory dire
 syscalls.
 
 ![Virtual Memory](VirtualMemoryLinux.gif)
+
 source: <https://developer.ibm.com/technologies/linux/articles/l-kernel-memory-access/>
 
 Note that normally:
