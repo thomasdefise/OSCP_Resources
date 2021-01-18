@@ -34,10 +34,23 @@ git log -3               # Display only the 3 most recent commits.
 
 You can also use the following tools:
 
-- [repo-security-scanner](https://github.com/UKHomeOffice/repo-security-scanner): CLI tool that finds secrets accidentally committed to a git repo, eg passwords, private keys.
+- [repo-security-scanner](https://github.com/UKHomeOffice/repo-security-scanner) is CLI tool that finds secrets accidentally committed to a git repo, eg passwords, private keys.
+- [earlybird](https://github.com/americanexpress/earlybird) is a sensitive data detection tool capable of scanning source code repositories for clear text password violations, PII, outdated cryptography methods, key files and more.
 
 ```bash
 git log -p | scanrepo
+# Launch EarlyBird scan against a directory
+go-earlybird --path=/path/to/directory
+# Scan a remote git repo
+go-earlybird --git=https://github.com/americanexpress/earlybird
+```
+
+### .pcap
+
+[Pcapreader](https://github.com/raioramalho/Pcapreader) find passwords in .pcap files from wireshark and other apps
+
+```bash
+Pcapreader -f file.pcap
 ```
 
 ### .Exe
@@ -121,7 +134,6 @@ To prevent the above exploitation technique, we can tell the linker to resolve a
 ```bash
 python server.py --files backup.7z --wordlist lists.txt
 ```
-
 
 ### Microsoft Outlook email folder
 
