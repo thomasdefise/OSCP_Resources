@@ -1353,6 +1353,26 @@ Copied from [here](https://itm4n.github.io/dll-proxying/)
 - *Active Defense*: Monitor changes made to the $PATH environment varialble
 - *Active Defense*: Monitor the start and restart of service running as system
 
+#### Image File Execution Options Injection
+
+Image File Execution Options (IFEO) are used for debugging.
+
+When a process is created, a debugger present in an application’s IFEO will be prepended to the application’s name, effectively launching the new process under the debugger;
+
+IFEOs can be set directly via the Registry or in Global Flags via the GFlags tool.
+The intention of creating the IFEO registry key is to give developers the option to debug their software.
+
+```bash
+REG ADD "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\explorer.exe" /v Debugger /d "cmd.exe"
+REG ADD "HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\explorer.exe" /v Debugger /d "cmd.exe"
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor registry changes made to those registry keys
+
+For more information about that technique refer to [T1546.012 - Event Triggered Execution: Image File Execution Options Injection](https://attack.mitre.org/techniques/T1546/012/)
+
 #### Privileged File Write
 
 Processes running with high privileges perform operations on files like all processes do.
