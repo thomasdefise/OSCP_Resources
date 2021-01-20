@@ -618,13 +618,22 @@ $DomainXMLFiles = Get-ChildItem -Force -Path "\\$Domain\SYSVOL\*\Policies" -Recu
 Source: <https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Get-GPPPassword.ps1>
 
 In addition to Groups.xml several other policy preference files can have the optional "cPassword" attribute set:
-Services\Services.xml: Element-Specific Attributes
-ScheduledTasks\ScheduledTasks.xml: Task Inner Element, TaskV2 Inner Element, ImmediateTaskV2 Inner Element
-Printers\Printers.xml: SharedPrinter Element
-Drives\Drives.xml: Element-Specific Attributes
-DataSources\DataSources.xml: Element-Specific Attributes
+
+- Services\Services.xml: Element-Specific Attributes
+- ScheduledTasks\ScheduledTasks.xml: Task Inner Element, TaskV2 Inner Element, ImmediateTaskV2 Inner Element
+- Printers\Printers.xml: SharedPrinter Element
+- Drives\Drives.xml: Element-Specific Attributes
+- DataSources\DataSources.xml: Element-Specific Attributes
 
 We can use [Get-GPPPassword](https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Get-GPPPassword.ps1) which is part of PowerSploit in order to do the job for us
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure all domain controllers are running on current operating system versions with the latest patches, as current versions of Windows Server do not permit the embedding of passwords in Group Policy Preferences (Patch KB2962486)
+- *Architecture*: Implement Microsoft’s Local Administrator Password Solution (LAPS).
+- *Active Defense*: Monitor for attempts to access SYSVOL that involve searching for XML files.
+
+For more information about that technique refer to [T1552.006 - Unsecured Credentials: Group Policy Preferences](https://attack.mitre.org/techniques/T1552/006/)
 
 #### Windows Patches
 
@@ -635,6 +644,10 @@ However, if the "InstalledOn" column don't show patches that are "only" a few mo
 ```bash
 wmic qfe get Caption,Description,HotFixID,InstalledOn # Get Installed patches
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor for suspicious Windows Management Instrumentation activities
 
 #### Privilege Abuse
 
@@ -732,6 +745,10 @@ Get-ScheduledTask | where {$_.TaskPath -notlike "\Microsoft*"} | ft TaskName, Ta
 
 icacls C:\Windows\system32\Tasks
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor creation and changes of scheduled task though Windows Event ID 4698, 4700 and 4701
 
 For more information about that technique refer to [T1053.005 - Scheduled Task/Job: Scheduled Task](https://attack.mitre.org/techniques/T1053/005/)
 
@@ -879,6 +896,10 @@ Restart-Service -Name SERVICE_NAME
 - **obj=**: Specifies a name of an account in which a service will run, or specifies a name of the Windows driver object in which the driver will run.
 - **password=**: Specifies a password. This is required if an account other than the LocalSystem account is used.
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor processes and command-line arguments for actions that could create or modify services.
+
 For more information about that technique refer to:
 
 - [T1007 - System Service Discovery](https://attack.mitre.org/techniques/T1007/)
@@ -1004,7 +1025,6 @@ Every permission granted in Active Directory is based on these ACE structures.
 
 By default, the DACLs for nearly every AD objectcan be enumerated by **any authenticated user** in the domain through LDAP!
 
-
 How it works
 
 - No DACL &rarr; Full Access for everyone
@@ -1079,6 +1099,10 @@ reg query HKEY_CURRENT_USER\SOFTWARE\Wow6432Node\\Microsoft\Windows\CurrentVersi
 
 We can try to replace some of their .exe
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor Registry for changes to run keys that do not correlate with known software, patch cycles, etc. 
+
 For more information about that technique refer to [T1547.001 - Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder](https://attack.mitre.org/techniques/T1547/001/)
 
 ##### Windows StartUp folder
@@ -1114,6 +1138,11 @@ Check the last leter within the parantheses which is interpretted as the followi
 - **R**: Read-only access
 - **W**: Write-only access
 
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor Registry for changes to run keys that do not correlate with known software, patch cycles, etc. 
+
 For more information about that technique refer to [T1547.001 - Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder](https://attack.mitre.org/techniques/T1547/001/)
 
 #### Vulnerable Drivers
@@ -1123,6 +1152,8 @@ For more information about that technique refer to [T1547.001 - Boot or Logon Au
 ```bash
 DriverQuery.exe --no-msft
 ```
+
+For more information about that technique refer to [T1082 - System Information Discovery](https://attack.mitre.org/techniques/T1082/)
 
 #### DLL hijacking
 
@@ -1315,6 +1346,13 @@ Copied from [here](https://itm4n.github.io/dll-proxying/)
 ....
 ```
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Passive Defense*: Within your Application Control process, make sure that third-party applications don't install themselves in directory with weak permissions.
+- *Passive Defense*: Within your Application Control process, make sure that third-party applications don't perfom priviged operations when it is not needed.
+- *Active Defense*: Monitor changes made to the $PATH environment varialble
+- *Active Defense*: Monitor the start and restart of service running as system
+
 #### Privileged File Write
 
 Processes running with high privileges perform operations on files like all processes do.
@@ -1332,6 +1370,10 @@ The Microsoft Diagnostics Hub Standard Collector Service (DiagHub) is a service 
 ```bash
 diaghub.exe c:\\ProgramData\\ MALICIOUS.dll
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor the usage of diaghub.exe
 
 ##### Update Session Orchestrator Vulnerability
 
@@ -1356,6 +1398,10 @@ It's a stripped-down version of usoclient.exe. It can be run as a regular user t
 # 2. Use usoclient as a regular user
 usoclient
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor the usage of usoclient
 
 #### AppInit DLLs
 
@@ -1390,6 +1436,10 @@ HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Wind
 
 To eliminate these issues Didier Stevens developed a DLL which will check the configuration file called "LoadDLLViaAppInit.bl.txt" in order to determine which processes will load the arbitrary DLL.
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor changes towards the registry keys listed aboves
+
 #### AppCert DLLs
 
 > / / / To Finish
@@ -1418,6 +1468,10 @@ reg add "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v 
 ```
 
 Note that this method can be used to can also be used to elevate privileges (ex: Bypass User Account Control) if the system .NET process executes at a higher permission level
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor changes towards the registry keys listed aboves
 
 For more information about that technique refer to [T1574.012 - Hijack Execution Flow: COR_PROFILER](https://attack.mitre.org/techniques/T1574/012/)
 
@@ -1460,6 +1514,11 @@ This made the application running in backward compatibility mode redirect API ca
 
 [Here](https://www.fireeye.com/blog/threat-research/2017/05/fin7-shim-databases-persistence.html) is an blogpost by FireEye on how FIN7 used that technique
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure the latest patched are installed on your system (including KB3045645)
+- *Active Defense*: Monitor process execution for sdbinst.exe and command-line arguments for potential indications of application shim abuse.
+
 ### Active Directory Attacks
 
 #### Enumeration
@@ -1494,6 +1553,21 @@ The ALL collection method will perform **a lot of queries**, which could trigger
 2) We can use bloodhound
 
 When we put those four files within Bloundhount, we can search for nodes (Active Directory Object)
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Passive Defense*: Ensure that your Endpoint Security solution integrates with AMSI in order to potentially detect SharpHound fileless PowerShell run in memory
+- *Passive Defense*: Deploy HoneyTokens.
+- *Passive Defense*: Regularly BloodHound from a *Purple Team* principle in order to discover attack vector within your Active Directory.
+- *Active Defense*: Monitor LDAP & SMB traffic to your Domain Controllers, specially for high amount of queries.
+- *Active Defense*: Monitor traffic to the IPC$ shares.
+- *Active Defense*: Monitor abnormal connections towards the following named pipes:
+  - **\PIPE\wkssvc**: Query logged-in users
+  - **\PIPE\srvsvc**: Query system information
+  - **\PIPE\svcctl**: Query services with stored credentials
+  - **\PIPE\atsvc**: Query scheduled tasks
+  - **\PIPE\samr**: Enumerate domain and user information
+  - **\PIPE\lsass**: Extract credential information
 
 ##### Abusing Active Directory ACLs/ACEs
 
@@ -1672,6 +1746,12 @@ python GetNPUsers.py jurassic.park/ -usersfile usernames.txt -format hashcat -ou
 python GetNPUsers.py jurassic.park/triceratops:Sh4rpH0rns -request -format hashcat -outputfile hashes.asreproast
 ```
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Identify accounts that Do Not Require Preauthentication.
+- *Architecture*: If it is required within your organisation, male sure that you leverage long, complex passwords.
+- *Active Defense*: Monitor for changes to the User Account Control ‘Don’t Require Preauth’ value within Windows Event ID 4738.
+
 #### Credential Harvesting
 
 #### Security Support Provider Attack
@@ -1689,6 +1769,10 @@ mimikatz # misc::memssp         # Inject a malicious SSP with the memory.
 ```
 
 Once the SSP is registered, all users who log on to the compromised Domain Controller, as well as all local services, will log their passwords to the C:\Windows\System32\mimilsa.log file.
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Deploy the Local Security Authority Protection with the Protected Process Light (PPL) technology which ensures that the operating system only loads trusted services and processes.
 
 For more information about that technique refer to [T1547.005 - Boot or Logon Autostart Execution: Security Support Provider](https://attack.mitre.org/techniques/T1547/005/)
 
@@ -1756,6 +1840,13 @@ It currently extracts:
 ```bash
 ./lsadump.py <system hive> <security hive>
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure that local administrator accounts have complex, unique passwords across all systems on the network.
+- *Architecture*: Design an enterprise network that limits privileged account use across administrative tiers.
+
+For more information about that technique refer to [T1003.004 - OS Credential Dumping: LSA Secrets](https://attack.mitre.org/techniques/T1003/004/)
 
 #### LSASS
 
@@ -2006,6 +2097,13 @@ There are multiple ways around this constraint, however:
 NTDSUTIL "Activate Instance NTDS" "IFM" "Create Full S:\Files" "q" "q"
 ```
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure Domain Controller backups are properly secured and encrypted.
+- *Architecture*: Ensure that local administrator accounts have complex, unique passwords across all systems on the network.
+- *Architecture*: Design an enterprise network that limits privileged account use across administrative tiers.
+- *Active Defense*: Monitor abnormal attempts to access or copy the NTDS.dit
+
 For more information about that technique refer to [T1003.003 - OS Credential Dumping: NTDS](https://attack.mitre.org/techniques/T1003/003/)
 
 ###### *If you don't know, now you know: [Ntds.dit](https://www.windowstechno.com/what-is-ntds-dit/)*
@@ -2154,8 +2252,6 @@ This is done by using the **/tgtdeleg** option which says that accounts with AES
 Rubeus.exe kerberoast /tgtdeleg
 ```
 
-For more information about that technique refer to [T1558.003 - Steal or Forge Kerberos Tickets: Kerberoasting](https://attack.mitre.org/techniques/T1558/003/)
-
 Kerberoasting stand for extracting service account credential hashes from Active Directory for offline cracking.
 
 ```bash
@@ -2246,6 +2342,18 @@ mimikatz # kerberos::list /export
 
 .\hashcat.exe -m 13100 -o cracked.txt -a 0 .\Hash.txt .\wordlist.txt
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Enable the group Managed Service Accounts (gMSA).
+- *Architecture*: Adopt strong password hygiene practices for service accounts.
+- *Architecture*: Configure individual service accounts to not permit the RC4 protocol though setting *msDS-SupportedEncryptionTypes* to *0x18*.
+- *Architecture*: Perform *Kerberos Armoring* by reject authentication requests not using Flexible Authentication Secure Tunneling (FAST).
+- *Passive Defense*: Implement a honeypot method such as a well defined SPNs that should be not used.
+- *Active Defense*: Audit the assignment of servicePrincipalNames to sensitive user accounts.
+- *Active Defense*: Monitor for use of RC4 encryption within Windows Event IDs 4769 and 4770.
+- *Active Defense*: Monitor for abnormal volume of TGS requests.
+
+For more information about that technique refer to [T1558.003 - Steal or Forge Kerberos Tickets: Kerberoasting](https://attack.mitre.org/techniques/T1558/003/)
 
 #### Golden Ticket
 
