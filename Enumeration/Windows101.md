@@ -219,6 +219,27 @@ The Start-Transcript and Stop-transcript cmdlets let you record all of your acti
 Stop-Transcript # Stop recording
 ```
 
+##### Powershell Restriction
+
+[PowerShdll](https://github.com/p3nt4/PowerShdll) run PowerShell with DLLs only.
+
+PowerShdll can be run with: rundll32.exe, installutil.exe, regsvcs.exe, regasm.exe, regsvr32.exe or as a standalone executable.
+
+```bash
+rundll32 PowerShdll,main <script> 
+rundll32 PowerShdll,main -h         # Display this message
+rundll32 PowerShdll,main -f <path>  # Run the script passed as argument
+rundll32 PowerShdll,main -w         # Start an interactive console in a new window (Default)
+rundll32 PowerShdll,main -i         # Start an interactive console in this console
+# If you do not have an interractive console, use -n to avoid crashes on output
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Active Defense*: Monitor the execution and arguments of rundll32.exe (with an emphasis on comparing recent invocations of rundll32.exe with prior history of known good arguments and loaded DLLs to determine anomalous and potentially adversarial activity).
+
+For more information about that technique refer to [T1218.011 - Signed Binary Proxy Execution: Rundll32](https://attack.mitre.org/techniques/T1218/011/)
+
 #### Remote Desktop Session
 
 Remote Desktop Services (RDS), known as **Terminal Services** in Windows Server 2008 and earlier, is one of the components of Microsoft Windows that allow a user to take control of a remote computer or virtual machine over a network connection.
@@ -1101,7 +1122,7 @@ We can try to replace some of their .exe
 
 :white_check_mark: How to protect against or detect that technique:
 
-- *Active Defense*: Monitor Registry for changes to run keys that do not correlate with known software, patch cycles, etc. 
+- *Active Defense*: Monitor Registry for changes to run keys that do not correlate with known software, patch cycles, etc.
 
 For more information about that technique refer to [T1547.001 - Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder](https://attack.mitre.org/techniques/T1547/001/)
 
