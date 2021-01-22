@@ -289,6 +289,26 @@ This can be done with tools like [tcpdump](https://www.tcpdump.org/manpages/tcpd
 
 ### HTTP & HTTPS
 
+#### Aquatone
+
+[Aquatone](https://github.com/michenriksen/aquatone) is a tool for visual inspection of websites across a large amount of hosts and is convenient for quickly gaining an overview of HTTP-based attack surface.
+
+When Aquatone is done processing the target hosts, it has created a bunch of files and folders in the current directory:
+
+- **aquatone_report.html**: An HTML report to open in a browser that displays all the collected screenshots and response headers clustered by similarity.
+- **aquatone_urls.txt**: A file containing all responsive URLs. Useful for feeding into other tools.
+- **aquatone_session.json**: A file containing statistics and page data. Useful for automation.
+- **headers/**: A folder with files containing raw response headers from processed targets
+- **html/**: A folder with files containing the raw response bodies from processed targets. If you are processing a large amount of hosts, and don't need this for further analysis, you can disable this with the `-save-body=false` flag to save some disk space.
+- **screenshots/**: A folder with PNG screenshots of the processed targets
+
+The output can easily be zipped up and shared with others or archived.
+
+
+```bash
+cat url.txt | aquatone
+```
+
 #### EyeWitness
 
 [EyeWitness](https://github.com/FortyNorthSecurity/EyeWitness) is designed to take screenshots of websites provide some server header info, and identify default credentials if known.
