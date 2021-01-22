@@ -998,6 +998,10 @@ rlogin -l USERNAME <target>  # Connect on a remote machine with a
 nmap -p 631 --script cups-info IP # Lists printers managed by the CUPS printing service.
 ```
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure the CUPS service is not enabled within your organization if the system does not need to print jobs or accept print jobs from other systems
+
 ### CHARGEN
 
 The Character Generator Protocol (CHARGEN) is a service intended for testing, debugging, and measurement purposes. The protocol is rarely used, as its design flaws allow ready misuse
@@ -1012,12 +1016,41 @@ telnet HOST chargen
 
 :white_check_mark: How to protect against or detect that technique:
 
-- *Architecture*: Ensure CHARGEN services are not enabled within your organization if not used. If used, it it recommended to highly harden the firewall rules for the CHARGEN flows.
+- *Architecture*: Ensure theCHARGEN service is not enabled within your organization if not used. If used, it it recommended to highly harden the firewall rules for the CHARGEN flows.
+
+### Daytime Protocol
+
+The Daytime Protocol is a service intended for testing and measurement purposes in computer networks.
+
+This can be used to gather information against an environment
+
+```bash
+telnet HOST 13
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure the daytime service is not enabled within your organization if not used. If used, it it recommended to highly harden the firewall rules for the CHARGEN flows.
+
+### Discard
+
+discard is a network service that simply discards all data it receives. This service is intended for debugging and testing purposes.
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Ensure the Discard service is not enabled within your organization if not used. If used, it it recommended to highly harden the firewall rules for the CHARGEN flows.
+
+### talk
+
+### xinetd
+
+Avahi Server
 
 ### Network Ports
 
 |Port(s)|Protocol(s)|Services|
 |-|---------- | ----------- |
+|13|TCP & UDP|Daytime Protocol
 |19|TCP & UDP|CHARGEN|
 |21|TCP|FTP|
 |25|TCP|SMTP|
