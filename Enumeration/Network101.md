@@ -173,7 +173,7 @@ parsenmap services/full-sweep.xml > services/all-ports.csv
 #### Single Host
 
 ```bash
-nmap -p- -r oA nmap/allports -v IP # 1) Perform a scan on all ports with the verbose mode
+nmap -p- -r -oA nmap/allports -v IP # 1) Perform a scan on all ports with the verbose mode
 cat nmap/allports.nmap | grep open | awk -F/ '{print $1}' ORS="," # 2) Get all opened ports separated by commas
 nmap -sC -Pn -r -sV -oA nmap/specificports -p PORTS -v IP # 3) Run a Script scan on open ports
 nmap -sY -Pn -r IP -v # Perform a SCTP scan
@@ -191,6 +191,11 @@ nmap -sY -Pn -r IP -v # Perform a SCTP scan
 By default, Nmap scans the **1000** most popular ports of each protocol it is asked to scan.
 You can specify the **-F** (fast) option to scan only the 100 most common ports in each protocol.
 You can specify the **--top-ports N** to specify an arbitrary number of ports to scan.
+
+Possible results of nmap:
+
+- **open|filtered**: Indicates that nmap was not able to determine whether a port is open or filtered.
+- **open|tcpwrapped**: Indicates a real network service is available, but we are not on the list of hosts allowed to talk with it.
 
 If there are a lot of systems, you may need to use zenmap
 
