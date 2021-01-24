@@ -841,9 +841,20 @@ grep "net\.ipv4\.conf\.default\.log_martians" /etc/sysctl.conf
 
 #### User Enumeration
 
+Here are some intersting files to know
+
+- **utmp**: Will give you complete picture of users logins at which terminals, logouts, system events and current status of the system, system boot time (used by uptime) etc.
+- **wtmp**: Gives historical data of utmp.
+- **btmp**: Records only failed login attempts.
+
+[utmpdump](https://man7.org/linux/man-pages/man1/utmpdump.1.html) dump UTMP and WTMP files in raw format.
+
 ```bash
 lastlog # Reports the most recent login of all users
 last -f /var/log/wtmp # wtmp is a file on the Linux, Solaris, and BSD operating systems that keeps a history of all logins and logouts.
+utmpdump /var/run/utmp # Dump the utmp file
+utmpdump /var/log/wtmp # Dump the wtmp file
+utmpdump /var/log/btmp # Dump the btmp file
 ls -la /home # Enumerate users (via /home)
 cat /etc/passwd # Enumerate users (via /etc/passwd)
 cat /etc/passwd | egrep -e '/bin/(ba)?sh' # Enumerate users that has shell access
