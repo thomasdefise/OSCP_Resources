@@ -223,6 +223,14 @@ If you see those following message, it means that for some packets, Nmap it is g
 
 By doing this, Nmap can differentiate between ports that are **blocked by firewalls** (no response regardless of sending interval) or **closed, but rate limited** (able to receive icmp destination unreachable response if the sending interval is sufficiently large).
 
+#### xsltproc
+
+[xsltproc](https://linux.die.net/man/1/xsltproc) is a command line tool for applying XSLT stylesheets to XML documents.
+
+```bash
+xsltproc nmap.xml -o nmap.html
+```
+
 #### Hping
 
 > / / To Finish
