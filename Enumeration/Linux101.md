@@ -88,7 +88,7 @@ vmstat               # Report virtual memory statistics
 dmesg | less         # List hardware which hardware was detected and which drivers were loaded by the kernel at boot time.
 ```
 
-lscpu will even show you towards by which vulnerabilities are you CPU affected or not and vulnerable or mitigated. Here below is an example
+lscpu may even show you towards by which vulnerabilities are you CPU affected or not and vulnerable or mitigated. Here below is an example
 
 ```bash
 Vulnerability Itlb multihit:     KVM: Mitigation: VMX unsupported
@@ -221,6 +221,13 @@ It may be usefull to know if the following software are availables
 which nmap aws nc ncat netcat nc.traditional wget curl ping gcc g++ make gdb base64 socat python python2 python3 python2.7 python2.6 python3.6 python3.7 perl php ruby xterm doas sudo fetch docker lxc rkt kubectl 2>/dev/null
 ```
 
+```bash
+logrotate --version
+```
+
+If [logrotate](https://linux.die.net/man/8/logrotate) is executed as root, with option that creates a file ( like create, copy, compress, etc.) and the user is in control of the logfile path, it is possible to abuse a race-condition to write files in ANY directories.
+Affected version: all versions through 3.15.1
+
 :white_check_mark: How to protect against or detect that technique:
 
 - *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather information about installed softwares.
@@ -265,7 +272,7 @@ ls /dev 2>/dev/null | grep -i "sd"
 cat /etc/fstab 2>/dev/null | grep -v "^#" | grep -Pv "\W*\#" 2>/dev/null
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/fstab 2>/dev/null
 grep -E "(user|username|login|pass|password|pw|credentials)[=:]" /etc/mtab 2>/dev/null
-lpstat -a # Displays status information about the current classes, jobs, and printers
+lpstat # Displays status information about the current classes, jobs, and printers
 date 2>/dev/null # Date
 ```
 
@@ -1381,6 +1388,19 @@ If you can use **/usr/sbin/setcap** or **/usr/bin/setcap** you can easily perfor
 
 ```bash
 /usr/bin/setcap cap_setuid+ep /mybin
+```
+
+If you get capabilities in the hexadecimal, you can use [capsh](https://man7.org/linux/man-pages/man1/capsh.1.html) in order to translate that hexadecimal value towards capabilities in a human readable format
+
+```bash
+thomas@home# cat /proc/13/status | grep Cap
+CapInh: 0000000000000000
+CapPrm: 000001ffffffffff
+CapEff: 000001ffffffffff
+CapBnd: 000001ffffffffff
+CapAmb: 0000000000000000
+thomas@home# capsh --decode=000001ffffffffff
+0x000001ffffffffff=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read,cap_perfmon,cap_bpf,cap_checkpoint_restore
 ```
 
 *Note that on some systems, getcap is not available for all users* 
