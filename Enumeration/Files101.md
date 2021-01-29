@@ -36,13 +36,23 @@ You can also use the following tools:
 
 - [repo-security-scanner](https://github.com/UKHomeOffice/repo-security-scanner) is CLI tool that finds secrets accidentally committed to a git repo, eg passwords, private keys.
 - [earlybird](https://github.com/americanexpress/earlybird) is a sensitive data detection tool capable of scanning source code repositories for clear text password violations, PII, outdated cryptography methods, key files and more.
+- [git-hound](https://github.com/ezekg/git-hound) is a Git plugin that helps prevent sensitive data from being committed into a repository by sniffing potential commits against PCRE regular expressions.
+- [truffleHog](https://github.com/dxa4481/truffleHog) searches through git repositories for secrets, digging deep into commit history and branches.
 
 ```bash
 git log -p | scanrepo
 # Launch EarlyBird scan against a directory
 go-earlybird --path=/path/to/directory
 # Scan a remote git repo
-go-earlybird --git=https://github.com/americanexpress/earlybird
+go-earlybird --git=https://github.com/victim/victim
+# Sniff changes since last commit
+git hound sniff HEAD
+# Sniff entire codebase
+git hound sniff
+# Sniff entire repo history
+git log -p | git hound sniff
+# Searches through git repositories for secrets, digging deep into commit history and branches.
+truffleHog --regex --entropy=False https://github.com/victim/victim 
 ```
 
 ### .pcap
