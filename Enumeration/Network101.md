@@ -581,6 +581,17 @@ Note that any group or user that is not created by default will have a Relative 
 
 ### SMTP
 
+The Simple Mail Transfer Protocol is meant to SEND emails from one system to another.
+
+Some terms used alongside with SMTP are:
+
+- Mail User Agent (MUA): This is a (part of a) program connecting to a SMTP-server in order to send an email. Most likely this is your Outlook, Thunderbird, whatever.
+- Mail Transfer Agent (MTA): The transport service part of a program. They receive and transfer the emails. This might be an Exchange server, an internet facing gateway and so on.
+
+![SMTP](SMTP.png)
+
+Source: <https://www.geeksforgeeks.org/simple-mail-transfer-protocol-smtp/>
+
 #### Basic Information
 
 ```bash
@@ -600,6 +611,10 @@ nmap -p 25,465,587 --script smtp-ntlm-info victim.com
 ```
 
 #### Enumerate users (VRFY, EXPN and RCPT)
+
+- **VRFY**: Used to verifiy if a certain user is known to the SMTP-server
+- **EXPN**: Used to reveal the actual email-address(es) of an alias
+- **RCPT TO**: A needed command to specify to whom the email should be send
 
 ```bash
 smtp-user-enum -U USERS_DICT -t IP
@@ -631,6 +646,12 @@ Within HELO, **HELP** supply helpful information.
 **Delivery Status Notifications**: This has been setup in order to inform human beings of the status of message delivery processing, as well as the reasons for any delivery problems or outright failures, in a manner that is largely independent of human language and media
 
 Note that smtp-user-enum (Python) is currently not by default on Kali. For installing it use the following command: /root/.local/bin/pip3.8 install smtp-user-enum
+
+If we need to connect to a server that only allows encrypted communication, we can use openssl
+
+```bash
+openssl s_client -starttls smtp -connect SMTP-server:587
+```
 
 ### Post Office Protocol
 
@@ -928,7 +949,6 @@ python Responder.py -I ETHERNER_INTERFACE -rv
 /MultiRelay.py -t <target host> -c <shell command> -u ALL
 ```
 
-https://threat.tevora.com/quick-tip-skip-cracking-responder-hashes-and-replay-them/
 
 For more information about that technique refer to [T1557.001 - Man-in-the-Middle: LLMNR/NBT-NS Poisoning and SMB Relay](https://attack.mitre.org/techniques/T1557/001/)
 
@@ -1117,3 +1137,4 @@ Avahi Server
 ### References
 
 - Thanks to hacktricks for the NIS part
+- For the SNMP part, thanks to luemmelsec <https://luemmelsec.github.io/Pentest-Everything-SMTP/>
