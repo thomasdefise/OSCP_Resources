@@ -154,6 +154,7 @@ dnsspoof -r 192.168.0.1 -v 192.168.0.5 -a -t IP_X
 *Note that dnsspoof is 7 years old and may need to be run with Python 2*
 
 For more information about that attack patern refer to [CAPEC-142: DNS Cache Poisoning](https://capec.mitre.org/data/definitions/142.html)
+
 ### Port Scan
 
 #### Range
@@ -230,6 +231,10 @@ By doing this, Nmap can differentiate between ports that are **blocked by firewa
 ```bash
 xsltproc nmap.xml -o nmap.html
 ```
+
+#### Side Note: Sandmap
+
+[sandmap](https://github.com/trimstray/sandmap) is a tool supporting network and system reconnaissance using the massive Nmap engine. It provides a user-friendly interface, automates and speeds up scanning and allows you to easily use many advanced scanning techniques
 
 #### Hping
 
@@ -316,7 +321,6 @@ When Aquatone is done processing the target hosts, it has created a bunch of fil
 - **screenshots/**: A folder with PNG screenshots of the processed targets
 
 The output can easily be zipped up and shared with others or archived.
-
 
 ```bash
 cat url.txt | aquatone
@@ -514,7 +518,7 @@ Here below are commion mapping that can be usefull
 |/etc/group|group.byname, group.bygid|NIS group file|
 |/usr/lib/aliases|mail.aliases|Details mail aliases|
 
-###### *If you don't know, now you know: [NIShttps://en.wikipedia.org/wiki/Network_Information_Service)*
+###### *If you don't know, now you know: [NIS](https://en.wikipedia.org/wiki/Network_Information_Service)*
 
 **Network Information Service (NIS)** is a client–server directory service protocol for distributing system configuration data such as user and host names between computers on a computer network.
 
@@ -558,7 +562,7 @@ rpcclient -U UNSERNAME IP # (Require Password)
 
 More Info: <https://www.sans.org/blog/plundering-windows-account-info-via-authenticated-smb-sessions/>
 
-###### If you don't know, now you know: [SID](https://en.wikipedia.org/wiki/Security_Identifier)*
+###### *If you don't know, now you know: [SID](https://en.wikipedia.org/wiki/Security_Identifier)*
 
 In the context of the Microsoft Windows NT line of operating systems, a **Security Identifier** (commonly abbreviated SID) is a unique, immutable identifier of a user, user group, or other security principal. A security principal has a single SID for life (in a given domain), and all properties of the principal, including its name, are associated with the SID.
 
@@ -776,7 +780,6 @@ Tools:
 null sessions and the SID to RID enum.
 - [Spray](https://github.com/Greenwolf/Spray) is a password spraying tool for Active Directory credentials.
 
-
 It's usually with **enum4linux** that I have the most information.
 
 ```bash
@@ -822,17 +825,14 @@ For more information about that technique refer to [T1021.002 - Remote Services:
 
 #### Brute-Forcing
 
-
 - [Spray](https://github.com/Greenwolf/Spray) is a password spraying tool for Active Directory credentials.
-
 
 ```bash
 # Password spraying
 spray.sh -smb IP USERS.txt PASSWORDS.txt AttemptsPerLockoutPeriod LockoutPeriodInMinutes DOMAIN
 ```
 
-
-###### *If you don't know, now you know: (Windows Shares)[]*
+###### *If you don't know, now you know: [Windows Shares](https://en.wikipedia.org/wiki/Administrative_share)*
 
 - **DriveLetter\$**: This is a shared root partition or volume. Shared root partitions and volumes are displayed as the drive letter name appended with the dollar sign (\$). For example, when drive letters C and D are shared, they are displayed as C\$ and D\$.
 - **ADMIN$**: This is a resource that is used during remote administration of a computer.
@@ -856,8 +856,7 @@ kerbrute usernum -d DOMAIN USERTXT # Enumerate valid domain usernames via Kerber
 cme smb IP --pass-pol # Get the password policy
 ```
 
-nmap -p88 --script krb5-enum-users --script-args krb5-enumusers.realm="cyberspacekittens.local",userdb=/opt/userlist.txt <Domain Controller IP>
-
+nmap -p88 --script krb5-enum-users --script-args krb5-enumusers.realm="cyberspacekittens.local",userdb=/opt/userlist.txt \<Domain Controller IP>
 
 By default, failures are not logged, but that can be changed with -v.
 Kerbrute has a **--safe** option.
@@ -949,7 +948,6 @@ python Responder.py -I ETHERNER_INTERFACE -rv
 /MultiRelay.py -t <target host> -c <shell command> -u ALL
 ```
 
-
 For more information about that technique refer to [T1557.001 - Man-in-the-Middle: LLMNR/NBT-NS Poisoning and SMB Relay](https://attack.mitre.org/techniques/T1557/001/)
 
 ###### *If you don't know, now you know: [LLMNR](https://en.wikipedia.org/wiki/Link-Local_Multicast_Name_Resolution) & [NBT-NS](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc958811(v=technet.10)?redirectedfrom=MSDN)*
@@ -992,7 +990,7 @@ Some things to know about NTP:
 
 The universal forwarder collects data from a data source or another forwarder and sends it to a forwarder or a Splunk deployment. With a universal forwarder, you can send data to Splunk Enterprise, Splunk Light, or Splunk Cloud.
 
-Try to visit https://IP:8090
+Try to visit <https://IP:8090>
 
 If you have an admin account you can perform remote code execution with [PySplunkWhisperer2](https://github.com/cnotin/SplunkWhisperer2/tree/master/PySplunkWhisperer2)
 
