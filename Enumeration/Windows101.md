@@ -400,7 +400,7 @@ We may also check in Third Party Software
 %AllUsersProfile%Application Data\McAfee\Common Framework\SiteList.xml # McAfee Endpoint Protection
 reg query HKEY_LOCAL_MACHINE\SOFTWARE\RealVNC\WinVNC4 /v password # RealVNC
 reg query" HKCU\Software\SimonTatham\PuTTY\Sessions" # Putty
-``
+```
 
 If you can stage a .exe, you can use [Lazagne](https://github.com/AlessandroZ/LaZagne), which is even used by known APTs such as OilRig
 The LaZagne project is an open source application used to retrieve lots of passwords stored on a local computer.
@@ -736,6 +736,8 @@ However, if the "InstalledOn" column don't show patches that are "only" a few mo
 wmic qfe get Caption,Description,HotFixID,InstalledOn # Get Installed patches
 ```
 
+There is the following Metasploit Module available to enumerate windows patches *post/windows/gather/enum_patches*
+
 :white_check_mark: How to protect against or detect that technique:
 
 - *Active Defense*: Monitor for suspicious Windows Management Instrumentation activities
@@ -922,6 +924,11 @@ For more information about those techniques refer to:
 
 ### Service Enumeration
 
+Services can be interesting for two reasons:
+
+- Establish perstistence
+- Perform a privilege escalation towards SYSTEM or adminitrator through a misconfugred service
+
 ```bash
 # Displays all service and their name
 wmic service get pathname,startname
@@ -937,6 +944,8 @@ type Servicenames.txt
 FOR /F "tokens=2 delims= " %i in (Servicenames.txt) DO @echo %i >> services.txt
 FOR /F %i in (services.txt) DO @sc qc %i | findstr "BINARY_PATH_NAME" >> path.txt
 ```
+
+There is the following Metasploit Module available to enumerate weak permissions on services *post/windows/local/service_enumeration*
 
 If there is are path that contains whitespace and run as *LocalSystem*, Unquoted Service Path vulnerability.
 When Windows starts a service, it looks for the PATH where that services is locating. If any unquoted (has space) in the PATH the service can be manipulating.
@@ -955,7 +964,9 @@ We can also use the Sysinternals tool [accesschk](https://docs.microsoft.com/en-
 
 ```bash
 accesschk64.exe -uwcqv *
+# Search for all services that Authenticated Users can modify
 accesschk64.exe -uwcqv "Authenticated Users" *
+# Search for all services that everyone can modify
 accesschk64.exe -uwcqv "Everyone" *
 accesschk64.exe -ucqv SERVICE_NAME
 accesschk64.exe -c SERVICE_NAME
@@ -989,6 +1000,7 @@ Restart-Service -Name SERVICE_NAME
 
 :white_check_mark: How to protect against or detect that technique:
 
+- *Passive Defense*: Audit services that are running under administrator account or SYSTEM and make sure that they can ony be manipulated by administrators.
 - *Active Defense*: Monitor processes and command-line arguments for actions that could create or modify services.
 
 For more information about that technique refer to:
