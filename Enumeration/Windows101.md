@@ -371,10 +371,11 @@ Commands options:
 ```bash
 c:\sysprep.inf # Could be clear-text credentials
 c:\sysprep\sysprep.xml # Could be Base64 encoded credentials.
-%WINDIR%\Panther\Unattend\Unattended.xml # Could be Base64 encoded credentials.
-%WINDIR%\Panther\Unattended.xml # Could be Base64 encoded credentials.
+c:\Unattend.xml # Could be Base64 encoded credentials.
+%WINDIR%\Panther\Unattend\Unattend.xml # Could be Base64 encoded credentials.
+%WINDIR%\Panther\Unattend.xml # Could be Base64 encoded credentials.
 tomcat-users.xml   # Default user database for container-managed authentication in Tomcat.
-web.config         # Microsoft IIS Administration API informatio are contained in this file 
+web.config         # Microsoft IIS Administration API information are contained in this file 
 config.inc.php     # phpMyAdmin 
 config.xml         # Config file of multiple applications (Jenkins, Apache Cordova, ...)
 Credentials.xml    # Credentials file of multiple applications (Jenkins, ...)
@@ -384,12 +385,22 @@ findstr /si password *.xml *.ini *.txt *.bat .xls # Search for password in xml, 
 cmd.exe /c findstr /si password *.xml *.ini *.txt *.bat # Search for password in xml, ini, xml and bat files (Powershell)
 reg query HKLM /f password /t REG_SZ /s # Search for password in registry keys in HKLM
 reg query HKCU /f password /t REG_SZ /s # Search for password in registry keys in HKCU
+reg query "HKLM\SOFTWARE\Microsoft\Windows NT\Currentversion\Winlogon" # Windows Autologing
+reg query "HKLM\SYSTEM\Current\ControlSet\Services\SNMP" # SNMP Parameters
 dir "C:\Users\USER\AppData\Local\Microsoft\Windows\INetCookies"
 dir "C:\Users\USER\AppData\Roaming\Microsoft\Windows\Cookies"
 dir "C:\Users\USER\AppData\Roaming\Microsoft\Windows\Cookies\Low"
 tree /F /A c:\ tree.txt # Directory listing of C:
 Get-Childitem -Path C:\ -Force -Filter -Recurse *.log -ErrorAction SilentlyContinue | Where {$_.LastWriteTime -gt "2012-08-20"}
 ```
+
+We may also check in Third Party Software
+
+```bash
+%AllUsersProfile%Application Data\McAfee\Common Framework\SiteList.xml # McAfee Endpoint Protection
+reg query HKEY_LOCAL_MACHINE\SOFTWARE\RealVNC\WinVNC4 /v password # RealVNC
+reg query" HKCU\Software\SimonTatham\PuTTY\Sessions" # Putty
+``
 
 If you can stage a .exe, you can use [Lazagne](https://github.com/AlessandroZ/LaZagne), which is even used by known APTs such as OilRig
 The LaZagne project is an open source application used to retrieve lots of passwords stored on a local computer.
