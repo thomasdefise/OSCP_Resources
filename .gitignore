@@ -1,0 +1,7 @@
+.ionide
+.markdownlint.json
+/Enumeration/bruteforce_WebCookie.py
+/Enumeration/*.temp.md
+/Enumeration/*.tmp.md
+/.markdownlint.json
+/.ionide
