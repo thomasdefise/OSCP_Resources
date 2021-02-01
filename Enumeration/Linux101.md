@@ -348,6 +348,7 @@ grep "^\s*password" /boot/grub/menu.lst
 grep "^\s*GRUB2_PASSWORD" /boot/grub2/user.cfg
 grep "^\s*password" /boot/grub/grub.cfg
 locate password | more
+ypcat passwd # displays NIS password file
 ```
 
 - **.htpasswd**: used when protecting a file, folder or entire website with a password using HTTP authentication and implemented using rules within a .htaccess file.
