@@ -1,0 +1,21 @@
+# Information Gathering
+
+- Assets:
+    - IP addresses (both IPv4 and IPv4)
+    - DNS Name(s) associated with this Assets
+    - Underlying Operating System 
+- Systems:
+    - What the system is used for (Server, Workstation, IoT device)
+    - Which network services is it listening on 
+- Vulnerabilities
+    - Are those services running a vulnerable version
+    - Does those services uses weak and/or default passwords 
+    - Does those services are configured securely
+    - Is the operating system running a version that has vulnerabilities that can be attacked over the network
+
+
+
+
+- credentials: text file containing username with associated password (username:password)
+- passwords: text file containing passwords that have been found, bruteforced or cracked, but not associated to any username
+- username: text file containing usernames 

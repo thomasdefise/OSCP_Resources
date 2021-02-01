@@ -2,6 +2,11 @@ SQLite is used in all sorts of crazy places, including Airbus, Adobe, Solaris, b
 
 
 
+https://gitter.im/sqlitebrowser/sqlitebrowser 
+This program is not a visual shell for the sqlite command line tool
+
+sqlite3 
+
 |.help|
 |.shell CMD ARGS...| Run CMD ARGS... in a system shell
 |.headers on|off| Turn display of headers on or off|

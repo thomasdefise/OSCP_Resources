@@ -27,10 +27,12 @@ https://www.ired.team/offensive-security/privilege-escalation/unquoted-service-p
 
 ## To Do
 
+
+https://github.com/vavkamil/awesome-bugbounty-tools
+https://github.com/fleetcaptain/Turbolist3r
 https://bugs.chromium.org/p/project-zero/issues/list?sort=-reported
 https://github.com/SimplySecurity/SimplyEmail
 https://github.com/leebaird/discover
-https://github.com/cheetz/sslScrape
 https://github.com/iagox86/dnscat2
 https://github.com/PowerShellMafia/PowerSploit/tree/master/Privesc
 https://github.com/rsmudge/Malleable-C2-Profiles
@@ -61,11 +63,7 @@ https://www.ssh.com/ssh/putty/putty-manuals/0.68/Chapter7.html
 https://www.youtube.com/watch?v=8XmTz3A5rUo&t=2888
 https://jarnobaselier.nl/mimikatz/
 https://www.youtube.com/watch?v=f4vQhI4ADmI
-http://pentestmonkey.net/tag/unixprivesccheck
-https://0x1.gitlab.io/exploit/Linux-Privilege-Escalation/
-https://github.com/hacktoolspack/hack-tools
 http://www.greyhathacker.net/?p=738
-https://book.hacktricks.xyz/linux-unix/useful-linux-commands/bypass-bash-restrictions
 https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/kerberos-silver-tickets
 https://github.com/ohpe/juicy-potato
 https://labs.f-secure.com/blog/catching-lazarus-threat-intelligence-to-real-detection-logic/
@@ -84,9 +82,7 @@ https://www.nccgroup.com/globalassets/our-research/us/whitepapers/2016/june/cont
 https://adsecurity.org/?p=2011
 https://adsecurity.org/?page_id=183
 
-https://github.com/dxa4481/truffleHog
 https://github.com/UKHomeOffice/repo-security-scanner
-https://github.com/michenriksen/gitrob
 
 
 One HTTP method is called OPTIONS. It simply allows asking a server which other HTTP methods it supports. The server answers with the "Allow" header and gives us a comma separated list of supported methods.

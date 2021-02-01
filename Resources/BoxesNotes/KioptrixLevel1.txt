@@ -1,0 +1,287 @@
+192.168.0.35
+
+nmap -sC -sV -oA nmap/specificports -p 22,80,111,139,443,1024 -v 192.168.0.35
+
+PORT     STATE SERVICE     VERSION
+22/tcp   open  ssh         OpenSSH 2.9p2 (protocol 1.99)
+| ssh-hostkey: 
+|   1024 b8:74:6c:db:fd:8b:e6:66:e9:2a:2b:df:5e:6f:64:86 (RSA1)
+|   1024 8f:8e:5b:81:ed:21:ab:c1:80:e1:57:a3:3c:85:c4:71 (DSA)
+|_  1024 ed:4e:a9:4a:06:14:ff:15:14:ce:da:3a:80:db:e2:81 (RSA)
+|_sshv1: Server supports SSHv1
+80/tcp   open  http        Apache httpd 1.3.20 ((Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b)
+| http-methods: 
+|   Supported Methods: GET HEAD OPTIONS TRACE
+|_  Potentially risky methods: TRACE
+|_http-server-header: Apache/1.3.20 (Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b
+|_http-title: Test Page for the Apache Web Server on Red Hat Linux
+111/tcp  open  rpcbind     2 (RPC #100000)
+| rpcinfo: 
+|   program version    port/proto  service
+|   100000  2            111/tcp   rpcbind
+|   100000  2            111/udp   rpcbind
+|   100024  1           1024/tcp   status
+|_  100024  1           1024/udp   status
+139/tcp  open  netbios-ssn Samba smbd (workgroup: MYGROUP)
+443/tcp  open  ssl/https   Apache/1.3.20 (Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b
+| http-methods: 
+|_  Supported Methods: GET HEAD POST
+|_http-server-header: Apache/1.3.20 (Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b
+|_http-title: 400 Bad Request
+| ssl-cert: Subject: commonName=localhost.localdomain/organizationName=SomeOrganization/stateOrProvinceName=SomeState/countryName=--
+| Issuer: commonName=localhost.localdomain/organizationName=SomeOrganization/stateOrProvinceName=SomeState/countryName=--
+| Public Key type: rsa
+| Public Key bits: 1024
+| Signature Algorithm: md5WithRSAEncryption
+| Not valid before: 2009-09-26T09:32:06
+| Not valid after:  2010-09-26T09:32:06
+| MD5:   78ce 5293 4723 e7fe c28d 74ab 42d7 02f1
+|_SHA-1: 9c42 91c3 bed2 a95b 983d 10ac f766 ecb9 8766 1d33
+|_ssl-date: 2020-12-11T16:49:22+00:00; +1h01m49s from scanner time.
+| sslv2: 
+|   SSLv2 supported
+|   ciphers: 
+|     SSL2_RC4_64_WITH_MD5
+|     SSL2_RC2_128_CBC_WITH_MD5
+|     SSL2_RC4_128_WITH_MD5
+|     SSL2_DES_192_EDE3_CBC_WITH_MD5
+|     SSL2_RC4_128_EXPORT40_WITH_MD5
+|     SSL2_DES_64_CBC_WITH_MD5
+|_    SSL2_RC2_128_CBC_EXPORT40_WITH_MD5
+1024/tcp open  status      1 (RPC #100024)
+MAC Address: 00:0C:29:8D:77:D0 (VMware)
+
+Host script results:
+|_clock-skew: 1h01m48s
+| nbstat: NetBIOS name: KIOPTRIX, NetBIOS user: <unknown>, NetBIOS MAC: <unknown> (unknown)
+| Names:
+|   KIOPTRIX<00>         Flags: <unique><active>
+|   KIOPTRIX<03>         Flags: <unique><active>
+|   KIOPTRIX<20>         Flags: <unique><active>
+|   \x01\x02__MSBROWSE__\x02<01>  Flags: <group><active>
+|   MYGROUP<00>          Flags: <group><active>
+|   MYGROUP<1d>          Flags: <unique><active>
+|_  MYGROUP<1e>          Flags: <group><active>
+|_smb2-time: Protocol negotiation failed (SMB2)
+
+
+## Website
+
+whatweb 192.168.0.35
+	http://192.168.0.35 [200 OK] 
+	Apache[1.3.20][mod_ssl/2.8.4], 
+	Country[RESERVED][ZZ], 
+	Email[webmaster@example.com], 
+	HTTPServer[Red Hat Linux][Apache/1.3.20 (Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b], 
+	IP[192.168.0.35], 
+	OpenSSL[0.9.6b], 
+	Title[Test Page for the Apache Web Server on Red Hat Linux]
+
+/usr/local/bin/BlindElephant.py -l 192.168.0.35
+drupal with 16 plugins
+ - admin_menu
+ - cck
+ - date
+ - filefield
+ - google_analytics
+ - imageapi
+ - imagecache
+ - imagefield
+ - imce
+ - imce_swfupload
+ - pathauto
+ - print
+ - spamicide
+ - tagadelic
+ - token
+ - views
+ 
+wordpress with 26 plugins
+ - add-to-any
+ - advertising-manager
+ - akismet
+ - all-in-one-seo-pack
+ - buddypress
+ - contact-form-7
+ - gd-star-rating
+ - google-analyticator
+ - google-sitemap-generator
+ - newsletter
+ - nextgen-gallery
+ - polldaddy
+ - simple-tags
+ - smart-youtube
+ - sociable
+ - stats
+ - subscribe2
+ - tinymce-advanced
+ - twitter-tools
+ - wp-e-commerce
+ - wp-pagenavi
+ - wp-spamfree
+ - wp-super-cache
+ - wp-useronline
+ - wptouch
+ - yet-another-related-posts-plugin
+
+wpscan --url http://192.168.0.35 -e vp,vt --random-user-agent --plugins-detection mixed
+-> Scan Aborted: The remote website is up, but does not seem to be running WordPress.
+
+
+
+nikto -h 192.168.0.35
+
+- Nikto v2.1.6
+---------------------------------------------------------------------------
++ Target IP:          192.168.0.35
++ Target Hostname:    192.168.0.35
++ Target Port:        80
++ Start Time:         2020-12-11 11:01:26 (GMT-5)
+---------------------------------------------------------------------------
++ Server: Apache/1.3.20 (Unix)  (Red-Hat/Linux) mod_ssl/2.8.4 OpenSSL/0.9.6b
++ Server may leak inodes via ETags, header found with file /, inode: 34821, size: 2890, mtime: Wed Sep  5 23:12:46 2001
++ The anti-clickjacking X-Frame-Options header is not present.
++ The X-XSS-Protection header is not defined. This header can hint to the user agent to protect against some forms of XSS
++ The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type
++ OSVDB-27487: Apache is vulnerable to XSS via the Expect header
++ Apache/1.3.20 appears to be outdated (current is at least Apache/2.4.37). Apache 2.2.34 is the EOL for the 2.x branch.
++ mod_ssl/2.8.4 appears to be outdated (current is at least 2.8.31) (may depend on server version)
++ OpenSSL/0.9.6b appears to be outdated (current is at least 1.1.1). OpenSSL 1.0.0o and 0.9.8zc are also current.
++ Allowed HTTP Methods: GET, HEAD, OPTIONS, TRACE 
++ OSVDB-877: HTTP TRACE method is active, suggesting the host is vulnerable to XST
++ OSVDB-838: Apache/1.3.20 - Apache 1.x up 1.2.34 are vulnerable to a remote DoS and possible code execution. CAN-2002-0392.
++ OSVDB-4552: Apache/1.3.20 - Apache 1.3 below 1.3.27 are vulnerable to a local buffer overflow which allows attackers to kill any process on the system. CAN-2002-0839.
++ OSVDB-2733: Apache/1.3.20 - Apache 1.3 below 1.3.29 are vulnerable to overflows in mod_rewrite and mod_cgi. CAN-2003-0542.
++ mod_ssl/2.8.4 - mod_ssl 2.8.7 and lower are vulnerable to a remote buffer overflow which may allow a remote shell. http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2002-0082, OSVDB-756.
++ ///etc/hosts: The server install allows reading of any system file by adding an extra '/' to the URL.
++ OSVDB-682: /usage/: Webalizer may be installed. Versions lower than 2.01-09 vulnerable to Cross Site Scripting (XSS).
++ OSVDB-3268: /manual/: Directory indexing found.
++ OSVDB-3092: /manual/: Web server manual found.
++ OSVDB-3268: /icons/: Directory indexing found.
++ OSVDB-3233: /icons/README: Apache default file found.
++ OSVDB-3092: /test.php: This might be interesting...
++ /wp-content/themes/twentyeleven/images/headers/server.php?filesrc=/etc/hosts: A PHP backdoor file manager was found.
++ /wordpresswp-content/themes/twentyeleven/images/headers/server.php?filesrc=/etc/hosts: A PHP backdoor file manager was found.
++ /wp-includes/Requests/Utility/content-post.php?filesrc=/etc/hosts: A PHP backdoor file manager was found.
++ /wordpresswp-includes/Requests/Utility/content-post.php?filesrc=/etc/hosts: A PHP backdoor file manager was found.
++ /wp-includes/js/tinymce/themes/modern/Meuhy.php?filesrc=/etc/hosts: A PHP backdoor file manager was found.
++ /wordpresswp-includes/js/tinymce/themes/modern/Meuhy.php?filesrc=/etc/hosts: A PHP backdoor file manager was found.
++ /assets/mobirise/css/meta.php?filesrc=: A PHP backdoor file manager was found.
++ /login.cgi?cli=aa%20aa%27cat%20/etc/hosts: Some D-Link router remote command execution.
++ /shell?cat+/etc/hosts: A backdoor was identified.
++ 8724 requests: 0 error(s) and 30 item(s) reported on remote host
++ End Time:           2020-12-11 11:01:54 (GMT-5) (28 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested
+
+
+
+http://192.168.0.35/usage/usage_200909.html#TOPCTRYS
+
+
+gobuster dir -u https://192.168.0.35/ -b 403,404 --timeout 30s -t 3 -k -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt
+
+gobuster dir -u http://192.168.0.35/ -b 403,404 --timeout 30s -t 3 -k -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt --discover-backup # Enumerate potential backup files within the given directory
+
+gobuster dir -u http://192.168.0.35/ -b 403,404 --timeout 30s -t 3 -k -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories-lowercase.txt
+
+feroxbuster -u  https://192.168.0.35/ -k -r --depth 6 --extract-links
+tcp connect error: Connection refused (os error 111)
+
+rpcinfo -p 192.168.0.35                                                                                                                                
+   program vers proto   port  service
+    100000    2   tcp    111  portmapper
+    100000    2   udp    111  portmapper
+    100024    1   udp   1024  status
+    100024    1   tcp   1024  status
+	
+
+nmap -sSUC -p111 192.168.0.35
+
+map scan report for 192.168.0.35
+Host is up (0.00060s latency).
+
+PORT    STATE         SERVICE
+111/tcp open          rpcbind
+| rpcinfo: 
+|   program version    port/proto  service
+|   100000  2            111/tcp   rpcbind
+|   100000  2            111/udp   rpcbind
+|   100024  1           1024/tcp   status
+|_  100024  1           1024/udp   status
+111/udp open|filtered rpcbind
+| rpcinfo: 
+|   program version    port/proto  service
+|   100000  2            111/tcp   rpcbind
+|   100000  2            111/udp   rpcbind
+|   100024  1           1024/tcp   status
+|_  100024  1           1024/udp   status
+MAC Address: 00:0C:29:8D:77:D0 (VMware)
+
+
+ypwhich -d localhost.localdomain 192.168.0.35
+ypcat –d localhost.localdomain –h 192.168.0.35 passwd.byname
+
+
+
+
+
+nmap -sC -sV -oA nmap/specificports -p 22,80,111,443,624,631,3306 -v 192.168.0.37
+
+
+PORT     STATE SERVICE    VERSION
+22/tcp   open  ssh        OpenSSH 3.9p1 (protocol 1.99)
+| ssh-hostkey: 
+|   1024 8f:3e:8b:1e:58:63:fe:cf:27:a3:18:09:3b:52:cf:72 (RSA1)
+|   1024 34:6b:45:3d:ba:ce:ca:b2:53:55:ef:1e:43:70:38:36 (DSA)
+|_  1024 68:4d:8c:bb:b6:5a:bd:79:71:b8:71:47:ea:00:42:61 (RSA)
+|_sshv1: Server supports SSHv1
+80/tcp   open  http       Apache httpd 2.0.52 ((CentOS))
+| http-methods: 
+|_  Supported Methods: GET HEAD POST OPTIONS
+|_http-server-header: Apache/2.0.52 (CentOS)
+|_http-title: Site doesn't have a title (text/html; charset=UTF-8).
+111/tcp  open  rpcbind    2 (RPC #100000)
+| rpcinfo: 
+|   program version    port/proto  service
+|   100000  2            111/tcp   rpcbind
+|   100000  2            111/udp   rpcbind
+|   100024  1            621/udp   status
+|_  100024  1            624/tcp   status
+443/tcp  open  ssl/https?
+| ssl-cert: Subject: commonName=localhost.localdomain/organizationName=SomeOrganization/stateOrProvinceName=SomeState/countryName=--
+| Issuer: commonName=localhost.localdomain/organizationName=SomeOrganization/stateOrProvinceName=SomeState/countryName=--
+| Public Key type: rsa
+| Public Key bits: 1024
+| Signature Algorithm: md5WithRSAEncryption
+| Not valid before: 2009-10-08T00:10:47
+| Not valid after:  2010-10-08T00:10:47
+| MD5:   01de 29f9 fbfb 2eb2 beaf e624 3157 090f
+|_SHA-1: 560c 9196 6506 fb0f fb81 66b1 ded3 ac11 2ed4 808a
+|_ssl-date: 2020-12-12T13:06:32+00:00; -2h09m36s from scanner time.
+| sslv2: 
+|   SSLv2 supported
+|   ciphers: 
+|     SSL2_DES_64_CBC_WITH_MD5
+|     SSL2_RC4_128_EXPORT40_WITH_MD5
+|     SSL2_DES_192_EDE3_CBC_WITH_MD5
+|     SSL2_RC2_128_CBC_EXPORT40_WITH_MD5
+|     SSL2_RC2_128_CBC_WITH_MD5
+|     SSL2_RC4_64_WITH_MD5
+|_    SSL2_RC4_128_WITH_MD5
+624/tcp  open  status     1 (RPC #100024)
+631/tcp  open  ipp        CUPS 1.1
+| http-methods: 
+|   Supported Methods: GET HEAD OPTIONS POST PUT
+|_  Potentially risky methods: PUT
+|_http-server-header: CUPS/1.1
+|_http-title: 403 Forbidden
+3306/tcp open  mysql      MySQL (unauthorized)
+-> mysql -h 192.168.0.37 -u root
+MAC Address: 00:0C:29:9F:2A:29 (VMware)
+
+gobuster dir -u https://192.168.0.37/ -b 403,404 --timeout 30s -t 3 -k -w /usr/share/seclists/Discovery/Web-Content/raft-large-files.txt
+
+
+
+

@@ -10,9 +10,22 @@ consists of an attacker submitting many passwords or passphrases with the hope o
 
 Form of brute force attack technique which tries to determine the decryption key or passphrase by trying thousands or millions of likely possibilities, such as words in a dictionary or previously used passwords, often from lists obtained from past security breaches.
 
+#### Password Spaying
+
+Password spraying is a type of brute force attack where the hacker tries to gain access to an organisation's systems by testing out a small number of commonly used passwords on a large number of accounts
+
+The passwords that do commonly give us at least one credential are:
+
+- Season + Year
+- Look at older breaches, find users for the target company and use similar passwords
+- Company name + Year/Numbers/Special Characters (!, $, #, @)
+
 ### Lookup Tables
+
 ### Reverse Lookup Tables
+
 ### Rainbow Tables attack
+
 ### Hashing with Salt
 
 TODO
@@ -23,11 +36,12 @@ these are not adequate for systems that use long passwords because of the diffic
 
 To address this issue of scale, reverse lookup tables were generated that stored only a smaller selection of hashes that when reversed could make long chains of passwords. Although the reverse lookup of a hash in a chained table takes more computational time, the lookup table itself can be much smaller, so hashes of longer passwords can be stored. Rainbow tables are a refinement of this chaining technique and provide a solution to a problem called chain collisions.
 
-https://github.com/dwyl/english-words
+<https://github.com/dwyl/english-words>
 
 ### Basic
 
 #### Hashes
+
 ```bash
 echo -n *hash* | wc -c: Get the count of characters within the hash
 ```
@@ -38,7 +52,6 @@ echo -n *hash* | wc -c: Get the count of characters within the hash
 |40|SHA1|100|
 |64|SHA256 <br >Or<br > SHA3-256|1400  <br >Or<br >  17400|
 |128|SHA2-512 <br >Or<br > SHA3-512|1700 <br >Or<br > 17600|
-
 
 #### Password lists
 
@@ -64,6 +77,7 @@ for x in *.jpg; do tesseract $x stoud -psm 11 -l eng >>tesser.out; done
 ```bash
 cewl --with-numbers https://domain.com > cewl_website_mainpage.txt
 ```
+
 - **--with-numbers**: Include "words" with numbers
 - **-m 8**: Some people specify this parameter in order to fetch words that are equal or bigger than 8.
 *Note that -m 8 could lead to miss some interesting word, as some users take products names or the names of the company as password and in to meet the password policy, they add characther at the end such as (eg: G00gl3\*\*)*
@@ -85,6 +99,15 @@ ciscot7.py -d -p PASSWORD
 
 For more information: [Cisco IOS Password Encryption Facts](https://www.cisco.com/c/en/us/support/docs/security-vpn/remote-authentication-dial-user-service-radius/107614-64.html)
 
+
+### Online
+
+[CMD5](https://www.cmd5.org/) This site provides online MD5 / sha1/ mysql / sha256 encryption and decryption services. We have a super huge database with more than 90T data records.
+
+
+
+
+
 ### Hashcat
 
 hashcat is the world's fastest and most advanced password recovery utility, supporting five unique modes of attack for over 300 highly-optimized hashing algorithms. hashcat currently supports CPUs, GPUs, and other hardware accelerators on Linux, Windows, and macOS, and has facilities to help enable distributed password cracking.
@@ -95,9 +118,11 @@ hashcat -m *Mode* *Hashes* *Worlist*
 ```
 
 #### Rule-based attack
+
 The rule-based attack is like a programming language designed for password candidate generation.
 
 Here below is how to generate a new worldlist taking into account rule-based attack
+
 ```bash
 hashcat -r /usr/share/hashcat/rules/best64.rules *wordlist* --stdout > custom_wl.txt
 ```
@@ -109,20 +134,20 @@ In 2012, the best64 challenge [forum thread](https://hashcat.net/forum/thread-10
 
 ### Bruteforcing
 
-##### Zip Bruteforcing
+#### Zip Bruteforcing
 
 ```bash
 zip2john file.hash # hash.txt Get hashed password out of zip archive
 ./john file.hash --wordlist rockyou.txt
 ```
 
-##### SMB Bruteforcing
+#### SMB Bruteforcing
 
 ```bash
 cme smb *ip* -u *user.txt* -p *passwords.txt* --continue-on-success
 smbpasswd -U *username* -r *IP* # Test the user
 ```
 
-##### References:
+#### References
 
 - https://www.4armed.com/blog/hashcat-rule-based-attack/

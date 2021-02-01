@@ -1739,6 +1739,12 @@ The password for the KDC account is used to derive a secret key for encrypting a
 |Guest account|S-1-5-<domain>-501|
 |KRBTGT account|S-1-5-<domain>-502|
 
+Group Types:
+
+Distribution groups: used for email distribution lists and cannot be used to control access to resources
+Security Groups: which CAN be used to control access and added into discretionary access control lists (DACLs).
+
+
 *Group scopes*
 
 Universal:
@@ -1746,6 +1752,8 @@ Universal:
 - Members
   - Accounts from any domain in the same forest
   - Global and other Universal groups from any domain in the same forest
+
+Universal groups are replicated along with their full memberships are to the Global Catalog.
 
 Global
 
@@ -1760,6 +1768,14 @@ Domain Local
   - Global groups from any domain or any trusted domain
   - Other Domain Local groups from the same domain
   - Accounts, Global groups, and Universal groups from other forests and from external domains
+
+The group memberships of domain local groups and global groups are not replicated to the Global Catalog
+Group objects are to the Global Catalog.
+
+Note that users that exist in external or forest trusts, **external from the domain’s current forest**, can still be added to domain local groups in the specified domain.
+These users show up as new entries in **CN=ForeignSecurityPrincipals,DC=domain,DC=com**
+
+*When a trust is established between a domain in a forest and a domain outside of that forest, security principals from the external domain can access resources in the internal domain. Active Directory creates a foreign security principal object in the internal domain to represent each security principal from the trusted external domain. These foreign security principals can become members of domain local groups in the internal domain.*
 
 ###### *If you don't know, now you know: [Active Directory Security Groups](https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/active-directory-security-groups#active-directory-default-security-groups-by-operating-system-version)*
 
@@ -1842,6 +1858,14 @@ A trust is a relationship, which you establish between domains that makes it pos
 The Global Catalog is used to perform forest-wide searches.
 It contains information about all objects in a forest, as well as a subset of attributes for each object.
 It can be interogated through LDAP over port 3268 or LDAP/SSL over port 3269.
+
+One point of the Global Catalog is to allow for object searching and deconfliction quickly without the need for referrals to other domains.
+-> we can quickly query information about all domains and objects in a forest with simple queries to our primary domain controller
+
+```powershell
+$Forest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()
+$Forest.FindAllGlobalCatalogs()
+```
 
 ###### *If you don't know, now you know: [Directory Partitions](https://docs.microsoft.com/en-us/windows/win32/ad/naming-contexts-and-partitions)*
 
@@ -2596,6 +2620,7 @@ By using this DCOM application and the associated method, it is possible to pivo
 - **ShellWindows** *(9BA05972-F6A8-11CF-A442-00A0C90A8F39)*: Represents a collection of the open windows that belong to the Shell. Methods associated with this objects can control and execute commands within the Shell, and obtain other Shell-related objects.
 - **ShellBrowserWindow** *(C08AFD90-F2A1-11D1-8455-00A0C91F3880)*: Creates a new instance of Windows Explorer
 - **Shell.Application**: *(13709620-c279-11ce-a49e-444553540000)*
+- **HTML Application**: *(3050F4D8-98B5-11CF-BB82-00AA00BDCE0B)*: 
 - ...
 
 DCOM applications can access the network and execute commands.
@@ -2605,6 +2630,16 @@ Here below is a the command to get a list of DCOM application
 ```powershell
 Get-CimInstance Win32_DCOMApplication
 ```
+
+###### LethalHTA
+
+```powershell
+LethalHTADotNet.exe IP URL_HTA
+```
+
+To detect our technique you can watch for files inside the INetCache (%windir%\[System32 or SysWOW64]\config\systemprofile\AppData\Local\Microsoft\Windows\INetCache\IE\) folder containing "ActiveXObject". This is due to mshta.exe caching the payload file. Furthermore it can be detected by an mshta.exe process spawned by svchost.exe.
+
+
 
 ###### Arbitrary Command Line Execution through Excell DDE
 

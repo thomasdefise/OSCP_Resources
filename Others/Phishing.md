@@ -1,5 +1,19 @@
 # Phishing
 
+
+Phishing Attack Vectors
+
+Microsoft Office — Word, Excel, PowerPoint
+PDFs — Bad-Pdf, MacOS Pdf
+Images — JPEGs
+Installer packages — MacOS installer
+Browser extensions — MacOS Chrome Extensions
+
+### Office Macro
+
+[wep](https://github.com/ghost123gg/wep) is proof-of-concept Python script which generates VBA code that can be used in Office macros or templates.
+
+
 ### Link Scanner Evasion
 
 #### pstf2
@@ -20,3 +34,8 @@ For the "Link Scanner Evasion" part, thanks to Akamai <https://blogs.akamai.com/
 ```bash
 bash maskphish.sh
 ```
+
+
+Others resources to process:
+
+- https://bohops.com/2017/12/02/clickonce-twice-or-thrice-a-technique-for-social-engineering-and-untrusted-command-execution/

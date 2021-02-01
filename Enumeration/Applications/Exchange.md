@@ -1,4 +1,4 @@
-
+# Exchange
 
 ## MAPI
 
@@ -31,7 +31,6 @@ When a form gets published into a folder such as the Inbox, it automatically get
 
 The Autodiscover service minimizes user configuration and deployment steps by providing clients access to Exchange features.
 
-
 ### Spray
 
 [Spray](https://github.com/Greenwolf/Spray) is a password spraying tool for Active Directory credentials.
@@ -56,9 +55,6 @@ The main aim is abuse the client-side Outlook features and gain a shell remotely
 ./ruler --email user@targetdomain.com abk dump --output /tmp/gal.txt
 ```
 
-
-
-
 *Note that it may be possible that Ruler don't discover the necessary settings automatically. Common scenarios are have the autodiscover services deployed over HTTP instead of HTTPS, no autodiscover DNS record or an authentication failing*
 
 ```bash
@@ -73,8 +69,6 @@ Options of the "form" mode:
 - **send**: Send an email to an existing form and trigger it
 - **delete**: Delete an existing form
 - **display**: Display all existing forms
-
-https://sensepost.com/blog/2017/outlook-forms-and-shells/
 
 #### Brute-Force
 
