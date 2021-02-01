@@ -1447,6 +1447,20 @@ dpkg -l # Displays all Debian based packages
 rpm -qa # Displays all RedHat based packages
 ```
 
+#### Samba
+
+Samba is a free software re-implementation of the SMB networking protocol.
+Samba provides file and print services for various Microsoft Windows clients and can integrate with a Microsoft Windows Server domain, either as a Domain Controller or as a domain member.
+
+The [pdbedit](https://www.samba.org/samba/docs/current/man-html/pdbedit.8.html) program is used to manage the users accounts stored in the sam database and can only be run by root.
+
+```bash
+# Lists all the user accounts present in the users database.
+pdbedit -L -v
+# Lists all the user accounts present in the users database in a format compatible with the smbpasswd file format.
+pdbedit -L -w
+```
+
 ### Linux Capabilities
 
 The [getcap](https://www.man7.org/linux/man-pages/man8/getcap.8.html) command displays the name and capabilities of each specified file.
