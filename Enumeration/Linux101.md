@@ -404,6 +404,12 @@ ypcat passwd # displays NIS password file
 - **/boot/grub2/user.cfg**:
    &rarr; Hashcat mode 7200
 
+[gimmecredz](https://github.com/0xmitsurugi/gimmecredz) is a bash script that dump all credentials from known location, such as .bash_history, config files, wordpress credentials, ...
+
+```bash
+./gimmecredz.sh
+```
+
 [Mimipenguin](https://github.com/huntergregal/mimipenguin) is a tool used to dump the login password from the current linux desktop user.
 Mimipenguin requires root permissions.
 It can retreive the following passwords from:
