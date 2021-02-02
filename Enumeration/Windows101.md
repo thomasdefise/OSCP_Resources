@@ -1943,6 +1943,14 @@ python GetNPUsers.py jurassic.park/triceratops:Sh4rpH0rns -request -format hashc
 
 #### Credential Harvesting
 
+#### General tool
+
+[Snaffler](https://github.com/SnaffCon/Snaffler) gets a list of Windows computers from Active Directory, then spreads out its snaffly appendages to them all to figure out which ones have file shares, and whether you can read them.
+
+```bash
+snaffler.exe -s -o snaffler.log
+```
+
 #### Security Support Provider Attack
 
 This attack can be performed against a Windows member server or domain controller.
