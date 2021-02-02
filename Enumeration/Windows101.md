@@ -484,6 +484,18 @@ Invoke-SessionGopher -Thorough
 Invoke-SessionGopher -AllDomain -u domain.com\USER -p PASSWORD
 ```
 
+There is also [SauronEye](https://github.com/vivami/SauronEye) which is designed to find files containing specific keywords.
+
+```bash
+SauronEye.exe -d C:\Users\USER\Desktop\ --filetypes .txt .doc .docx .xls --contents --keywords password pass* -v
+# Search multiple directories, including network drives
+SauronEye.exe --directories C:\ \\SOMENETWORKDRIVE\C$ --filetypes .txt .bat .docx .conf --contents --keywords password pass*
+# Search paths and shares containing spaces
+SauronEye.exe -d "C:\Users\USER\Path with a space" -d "\\SOME NETWORK DRIVE\C$" --filetypes .txt --keywords password pass*
+```
+
+*Note that SauronEye relies on functionality only available from .NET 4.7.2, and so requires >= .NET 4.7.2 to run.*
+
 ###### Google Chrome
 
 The Chrome default profile folder default locations are:
