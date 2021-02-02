@@ -334,6 +334,9 @@ cat /root/anaconda-ks.cfg
 find / -name *.bak -print 2>/dev/null # Commonly used to signify a backup copy of a file
 find / -name *.jks -print 2>/dev/null
 find / -name squid.conf -print 2>/dev/null
+find / -name krb5.conf -print 2>/dev/null
+find / -name krb5.keytab -print 2>/dev/null # Stores long-term keys for one or more principals.
+find / -name krb5cc_* -print 2>/dev/null # Kerberos credential cache directory
 find / -name .htpasswd -print 2>/dev/null
 find / -name .git -print 2>/dev/null
 find / -name .ipfs -print 2>/dev/null
@@ -350,6 +353,8 @@ grep "^\s*password" /boot/grub/grub.cfg
 locate password | more
 ypcat passwd # displays NIS password file
 ```
+
+- **krb5.conf**: 
 
 - **.htpasswd**: used when protecting a file, folder or entire website with a password using HTTP authentication and implemented using rules within a .htaccess file.
   - **\$1$**: MD5crypt -> Mode 500
