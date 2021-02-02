@@ -251,7 +251,9 @@ Stop-Transcript # Stop recording
 
 ##### PowerShell Constrained Language Mode
 
-Constrained language mode limits the capability of PowerShell to base functionality removing advanced feature support such as .Net & Windows API calls and COM access.
+PowerShell Constrained Language is a language mode of PowerShell designed to support day-to-day administrative tasks, yet restrict access to sensitive language elements that can be used to invoke arbitrary Windows APIs.
+
+The default mode is *FullLanguage* which allows any commands.
 
 ```powershell
 $ExecutionContext.SessionState.LanguageMode
@@ -1557,6 +1559,17 @@ usoclient
 
 - *Active Defense*: Monitor the usage of usoclient
 
+##### Windows Problem Reporting
+
+phoneinfo.dll is being loaded by wermgr.exe
+
+[WerTrigger](https://github.com/sailay1996/WerTrigger) is a PoC to leverage the fact that is missing in the system32 folder in order to get Privileged File Write
+
+1. As an administrator, copy phoneinfo.dll to C:\Windows\System32\
+2. Place Report.wer file and WerTrigger.exe in a same directory.
+3. Then, run WerTrigger.exe.
+4. Enjoy a shell as NT AUTHORITY\SYSTEM.
+
 #### AppInit DLLs
 
 The AppInit_DLLs infrastructure provides an easy way to hook system APIs by allowing custom DLLs to be loaded into the address space of every interactive application.
@@ -2047,7 +2060,7 @@ Dumpert uses API hooking.
 > API hooking is a technique by which we can instrument and modify the behavior and flow of API calls.
 
 ```bash
-rundll32.exe C:\Dumpert\Outflank-Dumpert.dll, Dump
+rundll32.exe C:\Dumpert\Outflank-Dumpert.dll,Dump
 ```
 
 ##### Credential Manager
