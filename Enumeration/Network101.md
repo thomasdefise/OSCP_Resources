@@ -94,6 +94,21 @@ Note that WHOIS relies on databases to store information. SQLi maybe possible wi
 whois -h IP -p PORT "a') or 1=1#"
 ```
 
+### OXID
+
+The OXID Resolver is a service that runs on every machine that supports COM+.
+
+It performs two important duties:
+
+- It stores the RPC string bindings that are necessary to connect with remote objects and provides them to local clients.
+- It sends ping messages to remote objects for which the local machine has clients and receives ping messages for objects running on the local machine. This aspect of the OXID Resolver supports the COM+ garbage collection mechanism.
+
+[IOXIDResolver](https://github.com/mubix/IOXIDResolver) is a tools used to identify hosts that have additional active interfaces, which usually means, virtual machines, VPNs, connected wireless, docker, etc. through the OXID Resolver
+
+```bash
+python IOXIDResolver.py -t 10.10.11.3
+```
+
 ### Network Attacks
 
 #### ARP Cache Poisoning
