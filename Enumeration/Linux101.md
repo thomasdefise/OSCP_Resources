@@ -203,6 +203,8 @@ Network shares may contains usefull information as well as identifying potential
 # Search for drives
 showmount -a # List both the client hostname or IP address and mounted directory in host:dir format.
 showmount -e # Show the NFS server’s export list.
+cat /etc/auto.master # Master Map for automounter
+cat /etc/auto_master # auto_master and map file format (BSD)
 ```
 
 :white_check_mark: How to protect against or detect that technique:
@@ -354,7 +356,7 @@ locate password | more
 ypcat passwd # displays NIS password file
 ```
 
-- **krb5.conf**: 
+- **krb5.conf**: contains Kerberos configuration information, including the locations of KDCs and admin servers for the Kerberos realms of interest
 
 - **.htpasswd**: used when protecting a file, folder or entire website with a password using HTTP authentication and implemented using rules within a .htaccess file.
   - **\$1$**: MD5crypt -> Mode 500
@@ -561,16 +563,19 @@ cat /etc/lib/nfs/etab
 cat /etc/ssh/ssh_config
 cat /etc/ssh/sshd_config
 cat /etc/syslog.conf                 # Syslog
-cat /etc/chttp.conf                  #
+cat /etc/chttp.conf                  # CoreHTTP Web Server
 cat /etc/lighttpd.conf               # Lighttpd
 cat /etc/cups/cupsd.conf             # CUPS scheduler (Print Server)
 cat /etc/printer.conf                # Printer configuration file for cups
 cat /etc/inetd.conf                  # internet service daemon
 cat /etc/apache2/apache2.conf        # Apache 2
 cat /etc/mysql/mysql.conf            # MySQL
-ls /etc/pure-ftpf/conf
-car /etc/pure-ftpf/pure-ftpf.conf
-cat /etc/httpd/conf/httpd.conf
+cat /etc/samba/smb.conf              # Samba
+cat /etc/openldap/ldap.conf          # OpenLDAP
+cat /etc/ldap/ldap.conf
+ls /etc/pure-ftpf/conf               # Pure-FTPd
+cat /etc/pure-ftpf/pure-ftpf.conf    # Pure-FTPd
+cat /etc/httpd/conf/httpd.conf       # Apache HTTP Server
 cat /opt/lampp/etc/httpd.conf
 ls -aRl /etc/ | awk '$1 ~ /^.*r.*/' # Displays all configuration files.
 find /etc \( -name rsyncd.conf -o -name rsyncd.secrets \) # Rsync files
