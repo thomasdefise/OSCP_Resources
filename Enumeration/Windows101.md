@@ -1676,6 +1676,24 @@ A common language runtime (CLR) profiler is a dynamic link library (DLL) that co
 From a security perspective from Microsoft
 > A profiler DLL is an unmanaged DLL that runs as part of the common language runtime execution engine. As a result, the code in the profiler DLL is not subject to the restrictions of managed code access security. The only limitations on the profiler DLL are those imposed by the operating system on the user who is running the profiled application.
 
+### Keylogger & equivalent
+
+[WireTap](https://github.com/djhohnstein/WireTap) is a .NET 4.0 project to consolidate several functions used to interact with a user's hardware, including:
+
+- Screenshots (Display + WebCam Imaging)
+- Audio (Both line-in and line-out)
+- Keylogging
+- Activate voice recording when the user says a keyword phrase.
+
+```bash
+# Record all audio for 30 seconds
+WireTap.exe record_audio 30s
+# Start the keylogger
+WireTap.exe keylogger
+# Start keyword listener with a custom set of words
+WireTap.exe listen_for_passwords oil,password,pin
+```
+
 ### Windows Subsystem for Linux
 
 ```bash
