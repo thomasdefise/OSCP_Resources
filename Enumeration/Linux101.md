@@ -1450,12 +1450,17 @@ The ideas is to find binairies that we could leverage or binairies that are from
 **local** usually means that they are not part of the distribution but either locally compiled or manually installed
 
 ```bash
-ls -alh /usr/bin/ # Displays all binaries within /usr/bin/
-ls -alh /sbin/ # Displays all binaries within /sbin/
-ls -alh /usr/local/ # Displays all the content of /usr/local/
-ls -alh /usr/local/bin/  # Displays all the content of /usr/local/
-dpkg -l # Displays all Debian based packages
-rpm -qa # Displays all RedHat based packages
+ls -alh /usr/bin/          # Displays all binaries within /usr/bin/
+ls -alh /sbin/             # Displays all binaries within /sbin/
+ls -alh /usr/local/        # Displays all the content of /usr/local/
+ls -alh /usr/local/bin/    # Displays all the content of /usr/local/
+dpkg -l                    # Displays all Debian based packages
+rpm -qa --last | head      # Displays all RedHat based packages
+yum list | grep installed  #
+pkg_info                   # Displays all {Free,Net}BSD based packages
+pkginfo                    # Displays all Solaris based packages
+cd /var/db/pkg/ && ls -d   # Displays all Gentoo based packages   
+pacman -Q                  # Displays all Arch Linux based packages   
 ```
 
 #### Samba
