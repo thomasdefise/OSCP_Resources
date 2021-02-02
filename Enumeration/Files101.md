@@ -55,6 +55,14 @@ git log -p | git hound sniff
 truffleHog --regex --entropy=False https://github.com/victim/victim 
 ```
 
+### .vmdk
+
+[vmdkReader](https://github.com/leftp/VmdkReader) is a .Net 4.0 Console App to read and extract files from vmdk images.
+
+```bash
+vmdk.exe --command dir --source \backupserver\dc01\dc01.vmdk --directory \Users\
+```
+
 ### .pcap
 
 [Pcapreader](https://github.com/raioramalho/Pcapreader) find passwords in .pcap files from wireshark and other apps
