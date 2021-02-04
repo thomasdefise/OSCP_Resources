@@ -22,7 +22,16 @@ The passwords that do commonly give us at least one credential are:
 
 ### Lookup Tables
 
+The general idea is to **pre-compute** the hashes of the passwords in a password dictionary and store them, and their corresponding password, in a lookup table data structure.
+
+They will save computation time and will make running through a dictionary a lot less stressful on CPU.
+
 ### Reverse Lookup Tables
+
+This attack allows an attacker to apply a dictionary or brute-force attack to many hashes at the same time, **without having to pre-compute** a lookup table.
+
+1) We create a lookup table that maps each password hash from the compromised user account database to a list of users who had that hash.
+2) We hash each password guess and uses the lookup table to get a list of users whose password was the attacker’s guess.
 
 ### Rainbow Tables attack
 
@@ -55,7 +64,7 @@ echo -n *hash* | wc -c: Get the count of characters within the hash
 
 #### Password lists
 
-- **rockyou.txt**: Wordlist is a password dictionary, the collection of the most used and potential password. 
+- **rockyou.txt**: Wordlist is a password dictionary, the collection of the most used and potential password.
 
 #### Customm Dictionary generation
 
@@ -104,10 +113,6 @@ For more information: [Cisco IOS Password Encryption Facts](https://www.cisco.co
 
 [CMD5](https://www.cmd5.org/) This site provides online MD5 / sha1/ mysql / sha256 encryption and decryption services. We have a super huge database with more than 90T data records.
 
-
-
-
-
 ### Hashcat
 
 hashcat is the world's fastest and most advanced password recovery utility, supporting five unique modes of attack for over 300 highly-optimized hashing algorithms. hashcat currently supports CPUs, GPUs, and other hardware accelerators on Linux, Windows, and macOS, and has facilities to help enable distributed password cracking.
@@ -139,6 +144,14 @@ In 2012, the best64 challenge [forum thread](https://hashcat.net/forum/thread-10
 ```bash
 zip2john file.hash # hash.txt Get hashed password out of zip archive
 ./john file.hash --wordlist rockyou.txt
+```
+
+#### Excell Bruteforcing
+
+Excell files can be protected by password.
+
+```bash
+python office2john.py Protected.xlsx > Excelhash.txt
 ```
 
 #### SMB Bruteforcing
