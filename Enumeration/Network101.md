@@ -170,6 +170,21 @@ dnsspoof -r 192.168.0.1 -v 192.168.0.5 -a -t IP_X
 
 For more information about that attack patern refer to [CAPEC-142: DNS Cache Poisoning](https://capec.mitre.org/data/definitions/142.html)
 
+#### DHCP option 12
+
+The DHCP Client Option12 feature specifies the hostname of the client.
+Often, this information can be used to map a DNS Entry to this IP
+
+we can use [dhtest](https://github.com/saravana815/dhtest) in order to select which names we want to sent to the DHCP Server.
+
+```bash
+./dhtest -m MAC -i INTERFACE -h HOSTNAME
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architeture*: prevents an attacker from creating a record that’s within a defined block list.
+
 ### Port Scan
 
 #### Range
@@ -410,6 +425,12 @@ I prefer to use raccoon for a quick additional scans.
 
 [ssh-audit](https://github.com/jtesta/ssh-audit) is a tool for ssh server & client configuration auditing.
 
+There is a Metasploit module that can be used to determine the SSH version running on the target server.
+
+```bash
+msf > use scanner/ssh/ssh_version
+```
+
 ### NFS
 
 You can try to get more information about those shares using nmap
@@ -436,6 +457,12 @@ Password:
 
 ls # Displays all files
 mget # Retreive all files
+```
+
+There is a Metasploit module that can be used to determine if FTP servers allows anonymous logins
+
+```bash
+msf > use auxiliary/scanner/ftp/anonymous
 ```
 
 We can also use wget to retreive all files
