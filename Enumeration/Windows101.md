@@ -212,6 +212,14 @@ If you are Administrator of one system, and it is using Windows Defender, check 
 
 For more information about that technique refer to [T1036 - Masquerading](https://attack.mitre.org/techniques/T1036/)
 
+##### EDR
+
+[SharpEDRChecker](https://github.com/PwnDexter/SharpEDRChecker) checks running processes, process metadata, Dlls loaded into your current process and each DLLs metadata, common install directories, installed services and each service binaries metadata, installed drivers and each drivers metadata, all for the presence of known defensive products such as AV's, EDR's and logging tools.
+
+```bash
+.\SharpEDRChecker.exe
+```
+
 ##### LAPS Evasion
 
 In some organizations, there are *Organization Unit* where administrators or members of the helpdesks have full control access of a computer.
@@ -225,7 +233,6 @@ ldapsearch -x -h 192.168.80.10 -D "USERNAME" -w PASSWORD -b "dc=BASELDAP,dc=info
 ```
 
 ##### Sysmon
-
 
 
 ```bash
