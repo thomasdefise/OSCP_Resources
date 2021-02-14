@@ -201,6 +201,14 @@ parsenmap services/full-sweep.xml
 parsenmap services/full-sweep.xml > services/all-ports.csv
 ```
 
+If the network is very big, it could be usefull to combine Masscan and Nmap
+
+[SpooNMAP](https://github.com/trustedsec/spoonmap) is a a wrapper for NMAP and Masscan.
+
+```bash
+./spoonmap.py
+```
+
 #### Single Host
 
 ```bash
