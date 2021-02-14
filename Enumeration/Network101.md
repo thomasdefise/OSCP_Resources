@@ -1050,6 +1050,34 @@ mysql -h IP -u USER -p -P 3306 DATABASE
 
 *Don't forget to specify the **-p** in order to say that you want to connect with a password*
 
+### Docker Registry
+
+The Docker Registry is a stateless, highly scalable server side application that stores and lets you distribute Docker images.
+The Registry is open-source, under the permissive Apache license.
+
+A Docker registry is organized into Docker repositories, where a repository holds all the versions of a specific image.
+
+Here are some fingerprint techniques:
+
+- If you access `/` nothing is returned in the response
+- If you access `/v2/` then {} is returned
+- If you access `/v2/_catalog` you may obtain:
+
+```bash
+curl -s http://IP:5000/v2/_catalog
+```
+
+It may be possible to connect to it without authentication
+
+Enumeration using docker
+
+```bash
+# If we know the images available on the server (/v2/_catalog), we can pull them
+docker pull 10.10.10.10:5000/IMAGE
+# Show the history of an image (we may find credentials)
+docker history 10.10.10.10:5000/ubuntu
+```
+
 ### Finger Service
 
 Finger is an old user information protocol are simple network protocols for the exchange of human-oriented status and user information that was created in ... 1977.
@@ -1167,6 +1195,7 @@ Avahi Server
 |1821|TCP|[Oracle](Applications/OracleDatabase.md)
 |2029|TCP & UDP|NFSv4|
 |3306|TCP|MySQL|
+|5000||Docker Registry|
 |5985|TCP|WinRM 2.0 HTTP|
 |5986|TCP|WinRM 2.0 HTTPS|
 |8000|TCP|[Java Debug Wire Protocol](Applications/Tomcat.md)|
