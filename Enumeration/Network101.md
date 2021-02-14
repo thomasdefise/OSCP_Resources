@@ -1131,6 +1131,44 @@ nmap -p 631 --script cups-info IP # Lists printers managed by the CUPS printing 
 
 - *Architecture*: Ensure the CUPS service is not enabled within your organization if the system does not need to print jobs or accept print jobs from other systems
 
+### Cisco Smart Install
+
+Cisco Smart Install is a legacy feature that provides zero-touch deployment for new switches, typically access layer switches.
+
+```bash
+sudo nmap -p 4786 -v --script cisco-siet IP
+```
+
+[SIET](https://github.com/Sab0tag3d/SIET) is a tool used to abuse the capabilities of Cisco Smart Install.
+
+```bash
+# Get the config
+sudo python siet.py -g -i IP
+```
+
+Once we have the config, we may find usefull information such as:
+
+- Cisco IOS type 7 passwords
+- SNMPv1 and SNMPv2 communities
+- NTP Servers
+- ...
+
+There is a Metasploit module that can be used to determine the SSH version running on the target server.
+
+```bash
+msf > use auxiliary/scanner/misc/cisco_smart_install
+```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: If it is not used, disable it.
+- *Architecture*: If it is used only for *Zero-Touch Deployment*, it should be disabled once deployed
+- *Architecture*: If it is used for more than *Zero-Touch Deployment*, only the *Integrated Branch Director* has TCP connectivity to all IBCs on port 4786. This can be done through corporate Firewalls or on the devices itself with either *Interface ACLs (ACLs)*, *Infrastructure ACLS (iACLs)*, *VLAN ACLs (VACLs)* and *Control Plane Policing* if available
+- *Active Defense*: Monitor when the *startup-config* is changed through Cisco Smart Install
+- *Active Defense*: Monitor the execution of high-privileged commands in configuration mode, via the Cisco Smart Install
+
+More information on how to setup this feature in a secure way are describe [here](https://www.cisco.com/c/en/us/td/docs/switches/lan/smart_install/configuration/guide/smart_install/concepts.html#23355)
+
 ### CHARGEN
 
 The Character Generator Protocol (CHARGEN) is a service intended for testing, debugging, and measurement purposes. The protocol is rarely used, as its design flaws allow ready misuse
@@ -1145,7 +1183,7 @@ telnet HOST chargen
 
 :white_check_mark: How to protect against or detect that technique:
 
-- *Architecture*: Ensure theCHARGEN service is not enabled within your organization if not used. If used, it it recommended to highly harden the firewall rules for the CHARGEN flows.
+- *Architecture*: Ensure the CHARGEN service is not enabled within your organization if not used. If used, it it recommended to highly harden the firewall rules for the CHARGEN flows.
 
 ### Daytime Protocol
 
@@ -1203,7 +1241,8 @@ Avahi Server
 |1821|TCP|[Oracle](Applications/OracleDatabase.md)
 |2029|TCP & UDP|NFSv4|
 |3306|TCP|MySQL|
-|5000||Docker Registry|
+|4786|TCP|Cisco Smart Install|
+|5000|TCP|Docker Registry|
 |5985|TCP|WinRM 2.0 HTTP|
 |5986|TCP|WinRM 2.0 HTTPS|
 |8000|TCP|[Java Debug Wire Protocol](Applications/Tomcat.md)|
