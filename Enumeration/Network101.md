@@ -187,6 +187,12 @@ we can use [dhtest](https://github.com/saravana815/dhtest) in order to select wh
 
 ### Port Scan
 
+Please not that when using Nmap, it may be better to use it with sudo as Nmap
+
+This is because Nmap needs to be able to sent raw network traffic and "sniff" for results.
+
+On Unix boxes, only the privileged user root is generally able to send and receive raw TCP packets and raw SCTP packets
+
 #### Range
 
 ```bash
