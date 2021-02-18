@@ -38,6 +38,7 @@ You can also use the following tools:
 - [earlybird](https://github.com/americanexpress/earlybird) is a sensitive data detection tool capable of scanning source code repositories for clear text password violations, PII, outdated cryptography methods, key files and more.
 - [git-hound](https://github.com/ezekg/git-hound) is a Git plugin that helps prevent sensitive data from being committed into a repository by sniffing potential commits against PCRE regular expressions.
 - [truffleHog](https://github.com/dxa4481/truffleHog) searches through git repositories for secrets, digging deep into commit history and branches.
+- [Gitleaks](https://github.com/zricethezav/gitleaks) is a SAST tool for detecting hardcoded secrets like passwords, api keys, and tokens in git repos.
 
 ```bash
 git log -p | scanrepo
@@ -53,6 +54,10 @@ git hound sniff
 git log -p | git hound sniff
 # Searches through git repositories for secrets, digging deep into commit history and branches.
 truffleHog --regex --entropy=False https://github.com/victim/victim 
+# Scans the entire history of tests/secrets and logs leaks as they are encountered
+gitleaks --repo-url=https://github.com/my-insecure/repo -v
+# gitleaks --repo-url=https://github.com/my-insecure/repo -v
+gitleaks --path=path/to/local/repo -v
 ```
 
 ### .vmdk
