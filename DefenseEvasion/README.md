@@ -247,6 +247,27 @@ With [Ghost In The Logs](https://github.com/bats3c/Ghost-In-The-Logs) we can eva
 
 For more information, refer to the blog post about the author of this tool, [Batsec](https://blog.dylan.codes/evading-sysmon-and-windows-event-logging/)
 
+#### PowerShell Script
+
+[PyFuscation](https://github.com/CBHue/PyFuscation) is a tool that obfuscate functions, variables and parameters within a PowerShell code.
+
+```bash
+PyFuscation.py -fvp --ps scripts.ps1
+```
+
+[Chimera](https://github.com/tokyoneon/Chimera) is a (shiny and very hack-ish) PowerShell obfuscation script designed to bypass AMSI and antivirus solutions
+
+Command options:
+
+- **--level**: Increase the degree of obfuscation
+- **--typedata**: Separate strings into chunks in order to bypass AMSI and EDR
+- **--backticks --keyword**: Inserting backticks into strings 
+- **--decimal**: Convert the payload to decimal format
+
+```bash
+./chimera.sh -f script.ps1 --level 4 -typedata -b new-object,invoke-expression -s getstream -o /tmp/output.ps1
+```
+
 #### Exe
 
 ##### Encoding
