@@ -146,6 +146,12 @@ zip2john file.hash # hash.txt Get hashed password out of zip archive
 ./john file.hash --wordlist rockyou.txt
 ```
 
+[fcrackzip](http://manpages.ubuntu.com/manpages/trusty/man1/fcrackzip.1.html) is a Free/Fast Zip Password Cracker
+
+```bash
+fcrackzip -D -p rockyou.txt file.zip 
+```
+
 #### Excell Bruteforcing
 
 Excell files can be protected by password.
