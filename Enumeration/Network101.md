@@ -437,12 +437,40 @@ I prefer to use raccoon for a quick additional scans.
 
 ### SSH
 
+Goals:
+
+- Check the SSH service and version for knowns vulnerabilities
+- Try to enumerate potential users
+
 [ssh-audit](https://github.com/jtesta/ssh-audit) is a tool for ssh server & client configuration auditing.
 
-There is a Metasploit module that can be used to determine the SSH version running on the target server.
+Most of the time, it will be [OpenSSH](https://www.openssh.com/)
+
+A way to stay off the radar a little bit is by giving the command as argument, so we are not seen when with the *who* and within a *netstat*
+
+```bash
+ssh thomas@IP whoami
+thomas
+```
+
+We can use the SSH procotol to upload or download files
+
+```bash
+# Upload file to remote destination
+scp file thomas@IP:/tmp/file
+# Download file from remote system
+scp thomas@IP:/root/file ./file
+# Download a folder from a remote system
+scp -r thomas@IP:/root/folder ./folder
+```
+
+For user enumeration, there is a script available [ssh_user_enum](https://github.com/nccgroup/ssh_user_enum)
+
+There is are also some Metasploit modules that can be used.
 
 ```bash
 msf > use scanner/ssh/ssh_version
+msf > use auxiliary/scanner/ssh/ssh_enumusers
 ```
 
 ### NFS
@@ -1159,7 +1187,7 @@ Once we have the config, we may find usefull information such as:
 - NTP Servers
 - ...
 
-There is a Metasploit module that can be used to determine the SSH version running on the target server.
+There is a Metasploit module that can be .....
 
 ```bash
 msf > use auxiliary/scanner/misc/cisco_smart_install
