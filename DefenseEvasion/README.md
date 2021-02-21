@@ -312,6 +312,10 @@ UPX offers ten different compression levels from -1 to -9, and --best.  The defa
 
 Note that compression level **--best** can be somewhat slow for large files, but you definitely should use it when releasing a final version of your program.
 
+#### Test
+
+[Antiscan.me](https://antiscan.me/) is a site that allows you to scan your binaries with multiple antivirus engines without distributing them.
+
 #### Virtualized Environment
 
 [ScoopyNG](https://www.aldeid.com/wiki/ScoopyNG) is a Proof of Concept (PoC) to detect whether it is run inside VMware.
