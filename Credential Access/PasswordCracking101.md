@@ -85,6 +85,8 @@ for x in *.jpg; do tesseract $x stoud -psm 11 -l eng >>tesser.out; done
 
 ```bash
 cewl --with-numbers https://domain.com > cewl_website_mainpage.txt
+# Remove the CeWL header
+tail -n +2 cewl_website_mainpage.txt > cewl_processed.txt
 ```
 
 - **--with-numbers**: Include "words" with numbers
@@ -129,8 +131,10 @@ The rule-based attack is like a programming language designed for password candi
 Here below is how to generate a new worldlist taking into account rule-based attack
 
 ```bash
-hashcat -r /usr/share/hashcat/rules/best64.rules *wordlist* --stdout > custom_wl.txt
+hashcat -r /usr/share/hashcat/rules/best64.rule *wordlist* --stdout > custom_wl.txt
 ```
+
+There is also the [OneRuleToRuleThemAll](https://notsosecure.com/one-rule-to-rule-them-all/)
 
 ##### For the anecdote
 
