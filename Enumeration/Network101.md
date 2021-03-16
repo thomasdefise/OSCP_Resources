@@ -268,6 +268,12 @@ If you see those following message, it means that for some packets, Nmap it is g
 
 By doing this, Nmap can differentiate between ports that are **blocked by firewalls** (no response regardless of sending interval) or **closed, but rate limited** (able to receive icmp destination unreachable response if the sending interval is sufficiently large).
 
+#### SOCKS Proxy
+
+Nmap supports both **CONNECT** and **SOCKS4**. Both those protocols can only do TCP.
+This means that ICMP cannot be used, so Host Discovery needs to be skipped with -Pn.
+OS fingerprinting can also not be used as it target the proxy and not the host itself by design.
+
 #### xsltproc
 
 [xsltproc](https://linux.die.net/man/1/xsltproc) is a command line tool for applying XSLT stylesheets to XML documents.
@@ -466,11 +472,16 @@ scp -r thomas@IP:/root/folder ./folder
 
 For user enumeration, there is a script available [ssh_user_enum](https://github.com/nccgroup/ssh_user_enum)
 
+```bash
+./ssh_enum_v0.3.py --userlist users.txt --ip IP --autotune
+```
+
 There is are also some Metasploit modules that can be used.
 
 ```bash
 msf > use scanner/ssh/ssh_version
 msf > use auxiliary/scanner/ssh/ssh_enumusers
+msf > set USER_FILE "/usr/share/seclists/Usernames/Names/names.txt"
 ```
 
 ### NFS
@@ -487,6 +498,14 @@ You can try to mount the NFS shares
 
 ```bash
 showmount -e IP
+```
+
+*Note that showmount is part of the "nfs-common" package and may not be installed on some systems*
+
+There is a Metasploit module that can be used to scans NFS mounts and their permissions.
+
+```bash
+msf > use auxiliary/scanner/nfs/nfsmount
 ```
 
 ### FTP Server
@@ -639,7 +658,9 @@ rpcclient -U UNSERNAME IP # (Require Password)
 - enumdomusers: Enumerate domain users
   - RID (the suffix of their SID) in hexadecimal form
   - To get the users, use **cat users_from_enumdomusers.txt | awk -F\\[ '{print \$2\}' | awk -F\\] '{print \$1\}' > users.txt**
-  - srvinfo: Server query info.
+
+- enumprivs
+- srvinfo: Server query info.
   - netshareenumall: Enumerate all shares
   - lookupsids: Resolve a list of SIDs to usernames.
       -> Lookup for SID that are S-1-5-21....-(500->501 & 1000+)
@@ -960,6 +981,12 @@ cme smb IP --local-auth -u Administrator -p rockyou.txt
 ### LDAP
 
 The Lightweight Directory Access Protocol is an open, vendor-neutral, industry standard application protocol for accessing and maintaining distributed directory information services over an Internet Protocol (IP) network.
+
+We can use nmap to retrieves the LDAP root DSA-specific Entry
+
+```bash
+nmap -sT -Pn -n --open IP -p389 --script ldap-rootdse
+```
 
 [ldapsearch](https://linux.die.net/man/1/ldapsearch) is a shell-accessible interface to perform LDAP queries.
 
