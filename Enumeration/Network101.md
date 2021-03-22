@@ -542,6 +542,16 @@ medusa -h IP -U /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt 
 hydra -L /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt -P /usr/share/seclists/Passwords/Common-Credentials/rockyou.txt ftp://IP
 ```
 
+### SFTP Server
+
+Goal:
+
+- Grab information from the SSL certificate
+
+```bash
+openssl s_client -connect IP -starttls ftp
+```
+
 ### SNMP
 
 There are multiple version of SNMP we may encounter:
