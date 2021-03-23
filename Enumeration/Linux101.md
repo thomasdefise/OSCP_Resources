@@ -194,7 +194,7 @@ Also check if tcpdump is available, you could maybe sniff some interesting thing
 
 :white_check_mark: How to protect against or detect that technique:
 
-- *Architecure*: Disable IPv6 if it is not needed ()
+- *Architecure*: Disable IPv6 if it is not needed
 - *Active Security*: Monitor processes and command-line arguments for actions that could be taken to gather system and network information.
 
 For more information about that technique refer to [T1016 - System Network Configuration Discovery](https://attack.mitre.org/techniques/T1016/)
@@ -334,6 +334,8 @@ For more information about that technique refer to [T1113 - Screen Capture](http
 
 #### Files Enumeration
 
+The goal is to find sensitive information.
+
 ##### Interesting Files
 
 ##### Potential credentials
@@ -351,8 +353,8 @@ find / -name squid.conf -print 2>/dev/null
 find / -name krb5.conf -print 2>/dev/null
 find / -name krb5.keytab -print 2>/dev/null # Stores long-term keys for one or more principals.
 find / -name krb5cc_* -print 2>/dev/null # Kerberos credential cache directory
-find / -name .htpasswd -print 2>/dev/null
-find / -name .git -print 2>/dev/null
+find / -name .htpasswd -print 2>/dev/null # Store usernames and password for basic authentication of HTTP users. 
+find / -name .git -print 2>/dev/null # Display the existance of a local Git repository
 find / -name .ipfs -print 2>/dev/null
 find / -name ssh_host_dsa_key* -print 2> /dev/null
 find / -name ssh_host_rsa_key* -print 2> /dev/null
@@ -617,8 +619,14 @@ find /etc -name squid.conf -print 2>/dev/null
 - **/etc/ssh/ssh_config**:
 
 - **/etc/ssh/sshd_config**:
-  -> Search for **PermitRootLogin**, if set to **yes**, you can login as root via SSH
-  -> Search for **AllowUsers** in order to enumerate the users allowed to connect using SSH
+  &rarr; Search for **PermitRootLogin**, if set to **yes**, you can login as root via SSH
+  &rarr; Search for **AllowUsers** in order to enumerate the users allowed to connect using SSH
+  &rarr; Search for **PasswordAuthentication**: Specifies whether to use password authentication
+  - Yes: Requires a password
+  - No: Through a certificate
+  &rarr; Search for **PreferredAuthentications**: Specifies the order in which the client should try protocol 2 authentication methods.
+  PubkeyAuthentication
+  &rarr; Search for **GatewayPorts**
 
 - **/etc/cups/cupsd.conf**: You could found credentials or others usefull information in it
 - **/etc/printer.conf**: You could found credentials or others usefull information in it
@@ -1248,7 +1256,7 @@ Interesting cron files:
 *Nowadays the file is empty by default.
 Originally it was usually used to run daily, weekly, monthly jobs. By default these jobs are now run through anacron which reads /etc/anacrontab configuration file.*
 - **/var/spool/cron**: Directory that contains user crontables created by the crontab command.
-- **/etc/cron.d:**: Directory that contains system cronjobs stored for different users.
+- **/etc/cron.d**: Directory that contains system cronjobs stored for different users.
 
 Cron examines all stored crontabs and checks each job to see if it needs to be run in the current minute.
 
@@ -1434,6 +1442,10 @@ ps aux | grep root # Displays services run by root
 ps -ef | grep root # Displays services run by root
 ss -lnpt # Dumps socket statistics
 ```
+
+:white_check_mark: How to protect against or detect that technique:
+
+- *Architecture*: Perform process hiding (*using [hidepid](https://man7.org/linux/man-pages/man5/procfs.5.html)*)
 
 For more information about that technique refer to [T1057 - Process Discovery](https://attack.mitre.org/techniques/T1057/)
 
