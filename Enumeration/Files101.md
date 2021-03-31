@@ -76,6 +76,17 @@ vmdk.exe --command dir --source \backupserver\dc01\dc01.vmdk --directory \Users\
 Pcapreader -f file.pcap
 ```
 
+### .swp
+
+SWP file is more commonly known as the "swap" file
+
+#### Vi
+
+```bash
+vim -r file.swp
+:w temp.txt
+```
+
 ### .Exe
 
 #### Strings
