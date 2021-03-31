@@ -924,6 +924,12 @@ enum4linux -a IP                                 # Perform all simple enumeratio
 /opt/impacket/examples/reg.py ignite/Administrator:Ignite@987@192.168.1.105 query -keyName HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows -s
 ```
 
+The Metasploit smb_lookupsid module brute-forces SID lookups on a range of targets to determine what local users exist the system.
+
+```bash
+msf > use auxiliary/scanner/smb/smb_lookupsid
+```
+
 You can try connect to a share by doing the following:
 
 ```bash
@@ -949,6 +955,15 @@ As show below, you may need to try differents times with different parameters to
 sudo mount -t cifs //IP//SHARE
 sudo mount -t cifs -r 'user=USERNAME,password=PASSWORD //IP//SHARE /mnt/data
 ```
+
+There is are also a Metasploit module that can be used to determine what named pipes are available over SMB.
+
+```bash
+msf > use auxiliary/scanner/smb/pipe_auditor
+```
+
+scanner/smb/smb_lookupsid
+
 
 For more information about that technique refer to [T1021.002 - Remote Services: SMB/Windows Admin Shares](https://attack.mitre.org/techniques/T1021/002/)
 
