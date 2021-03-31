@@ -117,6 +117,11 @@ When new folders are created in the root it is writeable for all authenticated u
 
 &rarr; If binaries load with SYSTEM privileges from this folder it might just be a matter of replacing the binary with your own one.
 
+```bash
+icacls.exe "C:\Program Files"
+icacls.exe "C:\Program Files (x86)"
+```
+
 #### Command History
 
 ```bash
