@@ -20,6 +20,20 @@ In the example below, we don't use OSINT but we use Google's DNS with a list in 
 gobuster dns -d <domain> -t 8 -r 8.8.8.8 -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
 ```
 
+#### Virtual Host Enumeration
+
+```bash
+gobuster vhost -u <domain> -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
+```
+
+#### Domain Enumeration using CORS Headers
+
+The *Access-Control-Allow-Origin* response header indicates whether the response can be shared with requesting code from the given origin.
+
+```bash
+fuff -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt -u http://FUZZ.victim.com -mr 'Access-Control-Allow-Origin' -ignore-body
+```
+
 #### Reverse DNS
 
 DNRecon support DNSSEC and mDNS
@@ -993,6 +1007,7 @@ cme smb IP --local-auth -u Administrator -p rockyou.txt
 The Lightweight Directory Access Protocol is an open, vendor-neutral, industry standard application protocol for accessing and maintaining distributed directory information services over an Internet Protocol (IP) network.
 
 We can use nmap to retrieves the LDAP root DSA-specific Entry
+An LDAP server MUST provide information about itself and other information that is specific to each server. This is represented as a group of attributes located in the rootDSE (DSA-Specific Entry)
 
 ```bash
 nmap -sT -Pn -n --open IP -p389 --script ldap-rootdse
@@ -1000,18 +1015,18 @@ nmap -sT -Pn -n --open IP -p389 --script ldap-rootdse
 
 [ldapsearch](https://linux.die.net/man/1/ldapsearch) is a shell-accessible interface to perform LDAP queries.
 
+Options:
+
+- **-x**: Use simple authentication instead of SASL.
+- **-H**: Specify URI(s) referring to the ldap server(s).
+- **-s**: Specify the scope of the search to be one of **base**, **one**, **sub**, or **children** to specify a base object, one-level, subtree, or children search.
+
 ```bash
 ldapsearch -x -H LDAP_URI -s base namingcontexts # Get the actual domain
 ldapsearch -x -H LDAP_URI -s sub -b 'DC=X,DC=local' #
 # You can extract all users with the following command (require a user with a password)
 ldapsearch -x -h <IP> -D '<DOMAIN>\<username>' -w '<password>' -b "CN=Users,DC=<1_SUBDOMAIN>,DC=<TDL>"
 ```
-
-Options:
-
-- **-x**: Use simple authentication instead of SASL.
-- **-H**: Specify URI(s) referring to the ldap server(s).
-- **-s**: Specify the scope of the search to be one of **base**, **one**, **sub**, or **children** to specify a base object, one-level, subtree, or children search.
 
 [ldapdomaindump](https://github.com/dirkjanm/ldapdomaindump) is an Active Directory information dumper via LDAP
 
