@@ -87,6 +87,12 @@ vim -r file.swp
 :w temp.txt
 ```
 
+### LDAP Data Interchange Format
+
+The LDAP Data Interchange Format (LDIF) is a standard plain text data interchange format for representing LDAP (Lightweight Directory Access Protocol) directory content and update requests.
+
+[ldsview](https://github.com/kgoins/ldsview) is an offline search tool for LDAP directory dumps in LDIF format.
+
 ### .Exe
 
 #### Strings
