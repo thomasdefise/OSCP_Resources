@@ -156,11 +156,13 @@ ip link show up               # Display active interfaces
 route                         # Displays the routing table
 netstat -antlup               # Display all TCP,UDP listening and non-listening ports with their associated PID
 ss -anp                       # Dumps socket statistics and displays information
-ss -tp
+ss -lntp
 lsof -i                       # listing of all Internet and x.25 (HP-UX) network opened files.
 ip xfrm state list            # Print out the list of existing state in xfrm
 /var/log/messages I grep DHCP # List DHCP assignments 
 ```
+
+if you find some processes listening with `ss -lntp` but don't see them, don't hesitate to do a `grep -R <PORT_SERVICE> . 2>/dev/null` in order to find which process is listening on that port
 
 Netstat options:
 
